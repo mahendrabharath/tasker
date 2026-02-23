@@ -164,9 +164,6 @@ export function TaskForm({ onCreated, onCancel }: TaskFormProps) {
                 calendarClassName="tasker-datepicker"
                 popperClassName="tasker-datepicker-popper"
                 popperPlacement="bottom-start"
-                popperModifiers={[
-                  { name: "offset", options: { offset: [0, 12] } },
-                ]}
                 withPortal
               />
             </div>
