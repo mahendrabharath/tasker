@@ -1,0 +1,111 @@
+@import "tailwindcss";
+@import "react-datepicker/dist/react-datepicker.css";
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+}
+
+.tasker-datepicker-popper {
+  z-index: 60;
+}
+
+.react-datepicker__portal {
+  background: rgba(9, 9, 11, 0.72);
+  backdrop-filter: blur(6px);
+}
+
+.tasker-datepicker {
+  border: 1px solid #27272a;
+  border-radius: 20px;
+  background: #09090b;
+  color: #f4f4f5;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.35);
+  overflow: hidden;
+}
+
+.tasker-datepicker .react-datepicker__header {
+  background: #0f0f11;
+  border-bottom: 1px solid #27272a;
+  padding: 16px 20px 12px;
+}
+
+.tasker-datepicker .react-datepicker__current-month,
+.tasker-datepicker .react-datepicker-time__header {
+  color: #f4f4f5;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.tasker-datepicker .react-datepicker__day-name,
+.tasker-datepicker .react-datepicker__day,
+.tasker-datepicker .react-datepicker__time-name {
+  color: #d4d4d8;
+  width: 2.2rem;
+  line-height: 2.2rem;
+  margin: 0.2rem;
+  border-radius: 12px;
+}
+
+.tasker-datepicker .react-datepicker__day:hover,
+.tasker-datepicker .react-datepicker__time-list-item:hover {
+  background: #27272a;
+  color: #f4f4f5;
+}
+
+.tasker-datepicker .react-datepicker__day--selected,
+.tasker-datepicker .react-datepicker__day--keyboard-selected {
+  background: #f4f4f5;
+  color: #09090b;
+}
+
+.tasker-datepicker .react-datepicker__day--today {
+  border: 1px solid #52525b;
+}
+
+.tasker-datepicker .react-datepicker__navigation {
+  top: 18px;
+}
+
+.tasker-datepicker .react-datepicker__triangle {
+  display: none;
+}
+
+.tasker-datepicker .react-datepicker__time-container {
+  border-left: 1px solid #27272a;
+  width: 110px;
+}
+
+.tasker-datepicker .react-datepicker__time-list {
+  background: #0b0b0f;
+}
+
+.tasker-datepicker .react-datepicker__time-list-item {
+  color: #d4d4d8;
+  padding: 8px 12px;
+}
+
+.tasker-datepicker .react-datepicker__time-list-item--selected {
+  background: #f4f4f5;
+  color: #09090b;
+}
