@@ -36,21 +36,27 @@ export function ChartsPanel({ tasks }: ChartsPanelProps) {
     const days = eachDayOfInterval({ start, end });
 
     const base = new Map(
-      days.map((day) => [format(day, "MMM dd"), 0])
+      days.map((day) => [
+        format(day, "MMM dd"),
+        { count: 0, tasks: new Set<string>() },
+      ])
     );
 
-    sourceTasks
-      .flatMap((task) => task.task_completions ?? [])
-      .forEach((completion) => {
+    sourceTasks.forEach((task) => {
+      (task.task_completions ?? []).forEach((completion) => {
         const key = format(new Date(completion.completed_at), "MMM dd");
-        if (base.has(key)) {
-          base.set(key, (base.get(key) ?? 0) + 1);
+        const entry = base.get(key);
+        if (entry) {
+          entry.count += 1;
+          entry.tasks.add(task.title);
         }
       });
+    });
 
-    return Array.from(base.entries()).map(([day, count]) => ({
+    return Array.from(base.entries()).map(([day, entry]) => ({
       day,
-      count,
+      count: entry.count,
+      taskNames: Array.from(entry.tasks),
     }));
   };
 
@@ -117,14 +123,7 @@ export function ChartsPanel({ tasks }: ChartsPanelProps) {
                 <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
                 <XAxis dataKey="day" stroke="#a1a1aa" />
                 <YAxis stroke="#a1a1aa" allowDecimals={false} />
-                <Tooltip
-                  contentStyle={{
-                    background: "#09090b",
-                    border: "1px solid #27272a",
-                    color: "#f4f4f5",
-                    fontSize: "12px",
-                  }}
-                />
+                <Tooltip content={<ChartTooltip />} />
                 <Bar dataKey="count" fill="#e4e4e7" radius={[6, 6, 0, 0]} />
               </BarChart>
             )}
@@ -133,14 +132,7 @@ export function ChartsPanel({ tasks }: ChartsPanelProps) {
                 <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
                 <XAxis dataKey="day" stroke="#a1a1aa" />
                 <YAxis stroke="#a1a1aa" allowDecimals={false} />
-                <Tooltip
-                  contentStyle={{
-                    background: "#09090b",
-                    border: "1px solid #27272a",
-                    color: "#f4f4f5",
-                    fontSize: "12px",
-                  }}
-                />
+                <Tooltip content={<ChartTooltip />} />
                 <Line
                   type="monotone"
                   dataKey="count"
@@ -154,14 +146,7 @@ export function ChartsPanel({ tasks }: ChartsPanelProps) {
                 <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
                 <XAxis dataKey="day" stroke="#a1a1aa" />
                 <YAxis stroke="#a1a1aa" allowDecimals={false} />
-                <Tooltip
-                  contentStyle={{
-                    background: "#09090b",
-                    border: "1px solid #27272a",
-                    color: "#f4f4f5",
-                    fontSize: "12px",
-                  }}
-                />
+                <Tooltip content={<ChartTooltip />} />
                 <Area
                   type="monotone"
                   dataKey="count"
@@ -174,5 +159,30 @@ export function ChartsPanel({ tasks }: ChartsPanelProps) {
         )}
       </div>
     </section>
+  );
+}
+
+function ChartTooltip({
+  active,
+  payload,
+}: {
+  active?: boolean;
+  payload?: Array<{ payload?: { day?: string; count?: number; taskNames?: string[] } }>;
+}) {
+  if (!active || !payload?.length) return null;
+  const info = payload[0]?.payload;
+  if (!info) return null;
+  const names = info.taskNames ?? [];
+
+  return (
+    <div className="rounded-xl border border-zinc-800 bg-zinc-950 px-3 py-2 text-xs text-zinc-200 shadow-lg">
+      <p className="font-semibold text-zinc-100">{info.day}</p>
+      <p className="text-zinc-300">{info.count ?? 0} completion(s)</p>
+      {names.length > 0 && (
+        <p className="mt-1 text-zinc-400">
+          {names.join(", ")}
+        </p>
+      )}
+    </div>
   );
 }
