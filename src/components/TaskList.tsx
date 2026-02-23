@@ -62,7 +62,9 @@ export function TaskList({
           dueDate && dueDate.getTime() < Date.now() && !isCompleted;
         const isDueSoon =
           dueDate &&
+          !isCompleted &&
           !isOverdue &&
+          dueDate.getTime() > Date.now() &&
           dueDate.getTime() - Date.now() <= 1000 * 60 * 60 * 6;
         const images = imageMap.get(task.id) ?? [];
         const imagePaths =
@@ -92,12 +94,6 @@ export function TaskList({
                     </span>
                   )}
                   {!task.due_at && <span>No due date</span>}
-                  {task.is_repeating && task.repeat_rule && (
-                    <span>Repeats {task.repeat_rule}</span>
-                  )}
-                  {!task.is_repeating && (
-                    <span>{isCompleted ? "Completed" : "One-time"}</span>
-                  )}
                   {completionCount > 0 && (
                     <span>
                       {completionCount} completion
@@ -106,6 +102,16 @@ export function TaskList({
                   )}
                 </div>
                 <div className="mt-3 flex flex-wrap gap-2 text-xs">
+                  {task.is_repeating && task.repeat_rule && (
+                    <span className="rounded-full border border-zinc-700/60 bg-zinc-800/40 px-3 py-1 text-zinc-300">
+                      Repeats {task.repeat_rule}
+                    </span>
+                  )}
+                  {!task.is_repeating && (
+                    <span className="rounded-full border border-zinc-700/60 bg-zinc-800/40 px-3 py-1 text-zinc-300">
+                      One-time
+                    </span>
+                  )}
                   {isCompleted && (
                     <span className="rounded-full border border-emerald-500/40 bg-emerald-500/10 px-3 py-1 text-emerald-200">
                       Completed
@@ -135,23 +141,19 @@ export function TaskList({
                 )}
               </div>
               <div className="flex flex-wrap items-center gap-2">
-                <button
-                  onClick={() => onComplete(task.id)}
-                  disabled={isCompleted || isCompleting}
-                  className={`rounded-full border px-4 py-2 text-xs font-semibold transition ${
-                    isCompleted
-                      ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-200"
-                      : "border-zinc-700 text-zinc-100 hover:border-zinc-500"
-                  } ${isCompleting ? "opacity-60" : ""}`}
-                >
-                  {isCompleting
-                    ? "Saving..."
-                    : isCompleted
-                    ? "Completed"
-                    : task.is_repeating
-                    ? "Log completion"
-                    : "Mark complete"}
-                </button>
+                {!isCompleted && (
+                  <button
+                    onClick={() => onComplete(task.id)}
+                    disabled={isCompleting}
+                    className={`rounded-full border border-zinc-700 px-4 py-2 text-xs font-semibold text-zinc-100 transition hover:border-zinc-500 ${isCompleting ? "opacity-60" : ""}`}
+                  >
+                    {isCompleting
+                      ? "Saving..."
+                      : task.is_repeating
+                      ? "Log completion"
+                      : "Mark complete"}
+                  </button>
+                )}
                 <button
                   onClick={() => {
                     if (
