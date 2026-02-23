@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/components/AuthProvider";
 
@@ -10,6 +10,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     ? user.email.split("@")[0].slice(0, 2).toUpperCase()
     : "U";
   const [menuOpen, setMenuOpen] = useState(false);
+
+  useEffect(() => {
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("/sw.js").catch(() => null);
+    }
+  }, []);
 
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100">

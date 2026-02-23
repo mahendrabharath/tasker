@@ -8,6 +8,7 @@ import { useAuth } from "@/components/AuthProvider";
 import { AppShell } from "@/components/AppShell";
 import { TaskForm } from "@/components/TaskForm";
 import { TaskList } from "@/components/TaskList";
+import { FocusHeatmap } from "@/components/FocusHeatmap";
 import { ChartsPanel } from "@/components/ChartsPanel";
 import { NotificationPanel } from "@/components/NotificationPanel";
 
@@ -286,6 +287,7 @@ export default function AppPage() {
             />
           </div>
           <div className="flex flex-col gap-6">
+            <FocusHeatmap tasks={tasks} />
             <ChartsPanel tasks={tasks} />
             <NotificationPanel tasks={tasks} />
           </div>
