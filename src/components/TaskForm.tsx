@@ -150,7 +150,7 @@ export function TaskForm({ onCreated, onCancel }: TaskFormProps) {
             <div className="mt-2">
               <DatePicker
                 selected={dueAt}
-                onChange={(date) => setDueAt(date)}
+                onChange={(date: Date | null) => setDueAt(date)}
                 showTimeSelect
                 timeIntervals={15}
                 minDate={todayStart}
