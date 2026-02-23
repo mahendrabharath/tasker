@@ -1,8 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import DatePicker from "react-datepicker";
-import { isSameDay, set as setDateParts, startOfDay } from "date-fns";
 import { supabase } from "@/lib/supabaseClient";
 import { useAuth } from "@/components/AuthProvider";
 
@@ -17,55 +15,53 @@ const repeatOptions = [
   { value: "monthly", label: "Monthly" },
 ];
 
+const INTERVAL_MINUTES = 15;
+
+/** Format a Date for datetime-local input (yyyy-MM-ddTHH:mm). */
+function toDatetimeLocal(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  const h = String(d.getHours()).padStart(2, "0");
+  const min = String(d.getMinutes()).padStart(2, "0");
+  return `${y}-${m}-${day}T${h}:${min}`;
+}
+
+/** Parse datetime-local value to Date, or null if empty/invalid. */
+function parseDatetimeLocal(value: string): Date | null {
+  if (!value.trim()) return null;
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+/** Round time up to the next interval (e.g. 15 min). */
+function nextInterval(date: Date, intervalMinutes: number): Date {
+  const ms = intervalMinutes * 60 * 1000;
+  return new Date(Math.ceil(date.getTime() / ms) * ms);
+}
+
 export function TaskForm({ onCreated, onCancel }: TaskFormProps) {
   const { user } = useAuth();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [dueAt, setDueAt] = useState<Date | null>(null);
-  const [isPickerOpen, setIsPickerOpen] = useState(false);
   const [dateError, setDateError] = useState<string | null>(null);
-  const [pickerNow, setPickerNow] = useState<Date>(new Date());
-  const selectedDate = dueAt ?? pickerNow;
-  const todayStart = startOfDay(pickerNow);
-  const isToday = isSameDay(selectedDate, pickerNow);
-  const roundToNextInterval = (date: Date, intervalMinutes: number) => {
-    const intervalMs = intervalMinutes * 60 * 1000;
-    return new Date(Math.ceil(date.getTime() / intervalMs) * intervalMs);
-  };
-  const minSelectableTime = isToday
-    ? roundToNextInterval(pickerNow, 15)
-    : startOfDay(selectedDate);
-  const minTime = minSelectableTime;
-  const maxTime = setDateParts(selectedDate, {
-    hours: 23,
-    minutes: 45,
-    seconds: 0,
-    milliseconds: 0,
-  });
-  const filterTime = (time: Date) => {
-    if (!isToday) return true;
-    return time.getTime() >= minSelectableTime.getTime();
-  };
-  const handleDateChange = (date: Date | null) => {
-    if (!date) {
-      setDateError(null);
-      setDueAt(null);
-      return;
-    }
-    const current = new Date();
-    if (isSameDay(date, current) && date.getTime() < current.getTime()) {
-      setDateError("Please choose a future time.");
-      setDueAt(roundToNextInterval(current, 15));
-      return;
-    }
-    setDateError(null);
-    setDueAt(date);
-  };
   const [isRepeating, setIsRepeating] = useState(false);
   const [repeatRule, setRepeatRule] = useState("daily");
   const [images, setImages] = useState<File[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const minDatetime = toDatetimeLocal(nextInterval(new Date(), INTERVAL_MINUTES));
+
+  const handleDueAtChange = (value: string) => {
+    setDateError(null);
+    const parsed = parseDatetimeLocal(value);
+    setDueAt(parsed);
+    if (parsed && parsed.getTime() < Date.now()) {
+      setDateError("Please choose a future date and time.");
+    }
+  };
 
   const resetForm = () => {
     setTitle("");
@@ -172,56 +168,21 @@ export function TaskForm({ onCreated, onCancel }: TaskFormProps) {
         <div className="grid gap-4 md:grid-cols-2">
           <label className="text-sm text-zinc-300">
             Due date & time
-            <div className="mt-2">
-              <DatePicker
-                selected={dueAt}
-                onChange={handleDateChange}
-                showTimeSelect
-                timeIntervals={15}
-                minDate={todayStart}
-                minTime={minTime}
-                maxTime={maxTime}
-                filterTime={filterTime}
-                shouldCloseOnSelect={false}
-                open={isPickerOpen}
-                onInputClick={() => {
-                  setPickerNow(new Date());
-                  setIsPickerOpen(true);
-                }}
-                onClickOutside={() => setIsPickerOpen(false)}
-                dateFormat="MMM d, yyyy h:mm aa"
-                placeholderText="Select date and time"
-                className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm text-zinc-100 focus:border-zinc-500 focus:outline-none"
-                calendarClassName="tasker-datepicker"
-                popperClassName="tasker-datepicker-popper"
-                popperPlacement="bottom-start"
-                withPortal
-                calendarContainer={({ className, children }) => (
-                  <div className={`${className} tasker-datepicker-shell`}>
-                    <div className="tasker-datepicker-body">{children}</div>
-                    <div className="tasker-datepicker-footer">
-                      <button
-                        type="button"
-                        onClick={() => setIsPickerOpen(false)}
-                        className="rounded-full border border-zinc-700 px-4 py-2 text-xs font-semibold text-zinc-100 transition hover:border-zinc-500"
-                      >
-                        Cancel
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setIsPickerOpen(false)}
-                        className="rounded-full bg-white px-4 py-2 text-xs font-semibold text-zinc-900 transition hover:bg-zinc-200"
-                      >
-                        Done
-                      </button>
-                    </div>
-                  </div>
-                )}
-              />
-            </div>
+            <input
+              type="datetime-local"
+              min={minDatetime}
+              step={INTERVAL_MINUTES * 60}
+              value={dueAt ? toDatetimeLocal(dueAt) : ""}
+              onChange={(e) => handleDueAtChange(e.target.value)}
+              className="mt-2 w-full rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm text-zinc-100 focus:border-zinc-500 focus:outline-none"
+              aria-invalid={dateError != null}
+              aria-describedby={dateError ? "due-date-error" : undefined}
+            />
           </label>
           {dateError && (
-            <p className="text-xs text-amber-300">{dateError}</p>
+            <p id="due-date-error" className="text-xs text-amber-300" role="alert">
+              {dateError}
+            </p>
           )}
           <label className="text-sm text-zinc-300">
             Repeat task
