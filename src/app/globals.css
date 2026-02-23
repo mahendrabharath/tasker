@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "react-datepicker/dist/react-datepicker.css";
 
 :root {
   --background: #ffffff;
@@ -23,4 +24,252 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+}
+
+.tasker-datepicker-popper {
+  z-index: 60;
+}
+
+.tasker-datepicker {
+  border: 1px solid #27272a;
+  border-radius: 20px;
+  background: #09090b;
+  color: #f4f4f5;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.35);
+  overflow: hidden;
+}
+
+.tasker-datepicker .react-datepicker__header {
+  background: #0f0f11;
+  border-bottom: 1px solid #27272a;
+  padding: 16px 20px 12px;
+}
+
+.tasker-datepicker .react-datepicker__current-month,
+.tasker-datepicker .react-datepicker-time__header {
+  color: #f4f4f5;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.tasker-datepicker .react-datepicker__day-name,
+.tasker-datepicker .react-datepicker__day,
+.tasker-datepicker .react-datepicker__time-name {
+  color: #d4d4d8;
+  width: 2.2rem;
+  line-height: 2.2rem;
+  margin: 0.2rem;
+  border-radius: 12px;
+}
+
+.tasker-datepicker .react-datepicker__day:hover,
+.tasker-datepicker .react-datepicker__time-list-item:hover {
+  background: #27272a;
+  color: #f4f4f5;
+}
+
+.tasker-datepicker .react-datepicker__day--selected,
+.tasker-datepicker .react-datepicker__day--keyboard-selected {
+  background: #f4f4f5;
+  color: #09090b;
+}
+
+.tasker-datepicker .react-datepicker__day--today {
+  border: 1px solid #52525b;
+}
+
+.tasker-datepicker .react-datepicker__day--disabled,
+.tasker-datepicker .react-datepicker__time-list-item--disabled {
+  color: #3f3f46;
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.tasker-datepicker .react-datepicker__navigation {
+  top: 18px;
+}
+
+.tasker-datepicker .react-datepicker__triangle {
+  display: none;
+}
+
+.tasker-datepicker .react-datepicker__time-container {
+  border-left: 1px solid #27272a;
+  width: 120px;
+  display: flex;
+  flex-direction: column;
+  min-height: 0; /* allow flex child to shrink and scroll */
+}
+
+.tasker-datepicker .react-datepicker__time-container,
+.tasker-datepicker .react-datepicker__time {
+  background: #0b0b0f;
+}
+
+.tasker-datepicker .react-datepicker__time,
+.tasker-datepicker .react-datepicker__time-box {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.tasker-datepicker .react-datepicker__time-container .react-datepicker__time-box {
+  margin: 0;
+  width: 100%;
+}
+
+.tasker-datepicker .react-datepicker__time {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.tasker-datepicker .react-datepicker__time-list {
+  background: #0b0b0f;
+  padding: 4px 0 12px;
+  scrollbar-color: transparent transparent;
+  scrollbar-width: none;
+  /* Cap height so broken inline height from react-datepicker (portal/ref bug) doesn't stretch the picker */
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.tasker-datepicker .react-datepicker__time-list-item {
+  color: #d4d4d8;
+  padding: 8px 16px;
+}
+
+.tasker-datepicker .react-datepicker__time-list-item--selected {
+  background: #f4f4f5;
+  color: #09090b;
+}
+
+.tasker-datepicker .react-datepicker__time-list::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
+.tasker-datepicker .react-datepicker__time-list::-webkit-scrollbar-track,
+.tasker-datepicker .react-datepicker__time-list::-webkit-scrollbar-thumb {
+  background: transparent;
+}
+
+.tasker-datepicker-shell {
+  background: #09090b;
+  border-radius: 20px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.tasker-datepicker-body {
+  display: flex;
+  align-items: stretch;
+}
+
+.tasker-datepicker-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px 16px;
+  background: #09090b;
+  border-top: 1px solid #27272a;
+  width: 100%;
+}
+@import "tailwindcss";
+@import "flatpickr/dist/themes/dark.css";
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+}
+
+/* Flatpickr theme overrides */
+.flatpickr-calendar {
+  background: #0b0b0f;
+  border: 1px solid #27272a;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.35);
+  border-radius: 20px;
+  overflow: hidden;
+}
+
+.flatpickr-months .flatpickr-month,
+.flatpickr-current-month,
+.flatpickr-weekdays {
+  background: #0f0f11;
+}
+
+.flatpickr-current-month,
+.flatpickr-weekdays,
+.flatpickr-weekday {
+  color: #f4f4f5;
+}
+
+.flatpickr-day {
+  color: #d4d4d8;
+  border-radius: 12px;
+}
+
+.flatpickr-day:hover,
+.flatpickr-day:focus {
+  background: #27272a;
+  border-color: #27272a;
+}
+
+.flatpickr-day.today {
+  border-color: #52525b;
+}
+
+.flatpickr-day.selected,
+.flatpickr-day.selected:hover {
+  background: #f4f4f5;
+  color: #09090b;
+  border-color: #f4f4f5;
+}
+
+.flatpickr-day.flatpickr-disabled,
+.flatpickr-day.prevMonthDay,
+.flatpickr-day.nextMonthDay {
+  color: #3f3f46;
+}
+
+.flatpickr-time {
+  border-top: 1px solid #27272a;
+}
+
+.flatpickr-time input,
+.flatpickr-time .flatpickr-am-pm {
+  color: #f4f4f5;
+  background: #0b0b0f;
+}
+
+.flatpickr-time input:hover,
+.flatpickr-time .flatpickr-am-pm:hover {
+  background: #111115;
+}
+
+.flatpickr-time-separator,
+.flatpickr-time .numInputWrapper span.arrowUp,
+.flatpickr-time .numInputWrapper span.arrowDown {
+  color: #a1a1aa;
 }
