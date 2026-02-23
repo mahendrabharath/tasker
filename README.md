@@ -153,6 +153,34 @@ PUSH_CRON_SECRET=your-random-secret
 
 In Vercel, add a Cron job (Project Settings → Cron Jobs) and paste the path.
 
+## Supabase scheduler (alternative to Vercel Cron)
+
+You can use Supabase's scheduler to call the push endpoint directly.
+
+1. Open Supabase → **SQL Editor** and run:
+
+```sql
+create extension if not exists pg_net;
+
+select
+  cron.schedule(
+    'tasker-push-reminders',
+    '*/5 * * * *',
+    $$
+    select
+      net.http_post(
+        url := 'https://YOUR-VERCEL-DOMAIN/api/push/send?secret=YOUR_SECRET',
+        headers := jsonb_build_object('Content-Type', 'application/json'),
+        body := '{}'::jsonb
+      );
+    $$
+  );
+```
+
+2. Replace `YOUR-VERCEL-DOMAIN` and `YOUR_SECRET`.
+
+The SQL is also saved in `supabase/scheduler.sql`.
+
 ## Hosting (free options)
 
 - Vercel (free) for Next.js frontend

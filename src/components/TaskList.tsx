@@ -10,6 +10,7 @@ type TaskListProps = {
   loading: boolean;
   onComplete: (taskId: string) => void;
   onDelete: (taskId: string, imagePaths: string[]) => void;
+  completingIds: Set<string>;
 };
 
 export function TaskList({
@@ -17,6 +18,7 @@ export function TaskList({
   loading,
   onComplete,
   onDelete,
+  completingIds,
 }: TaskListProps) {
   const imageMap = useMemo(() => {
     const map = new Map<string, string[]>();
@@ -55,8 +57,17 @@ export function TaskList({
         const completionCount = task.task_completions?.length ?? 0;
         const lastCompletion = task.task_completions?.[0]?.completed_at;
         const isCompleted = !task.is_repeating && completionCount > 0;
+        const dueDate = task.due_at ? new Date(task.due_at) : null;
+        const isOverdue =
+          dueDate && dueDate.getTime() < Date.now() && !isCompleted;
+        const isDueSoon =
+          dueDate &&
+          !isOverdue &&
+          dueDate.getTime() - Date.now() <= 1000 * 60 * 60 * 6;
         const images = imageMap.get(task.id) ?? [];
-        const imagePaths = task.task_images?.map((image) => image.storage_path) ?? [];
+        const imagePaths =
+          task.task_images?.map((image) => image.storage_path) ?? [];
+        const isCompleting = completingIds.has(task.id);
 
         return (
           <div
@@ -80,6 +91,7 @@ export function TaskList({
                       {format(new Date(task.due_at), "MMM dd, yyyy p")}
                     </span>
                   )}
+                  {!task.due_at && <span>No due date</span>}
                   {task.is_repeating && task.repeat_rule && (
                     <span>Repeats {task.repeat_rule}</span>
                   )}
@@ -93,6 +105,28 @@ export function TaskList({
                     </span>
                   )}
                 </div>
+                <div className="mt-3 flex flex-wrap gap-2 text-xs">
+                  {isCompleted && (
+                    <span className="rounded-full border border-emerald-500/40 bg-emerald-500/10 px-3 py-1 text-emerald-200">
+                      Completed
+                    </span>
+                  )}
+                  {isOverdue && (
+                    <span className="rounded-full border border-red-500/40 bg-red-500/10 px-3 py-1 text-red-200">
+                      Overdue
+                    </span>
+                  )}
+                  {isDueSoon && (
+                    <span className="rounded-full border border-amber-500/40 bg-amber-500/10 px-3 py-1 text-amber-200">
+                      Due soon
+                    </span>
+                  )}
+                  {!isCompleted && !isOverdue && !isDueSoon && dueDate && (
+                    <span className="rounded-full border border-zinc-700/60 bg-zinc-800/40 px-3 py-1 text-zinc-300">
+                      Upcoming
+                    </span>
+                  )}
+                </div>
                 {lastCompletion && (
                   <p className="mt-2 text-xs text-zinc-500">
                     Last completed{" "}
@@ -103,9 +137,20 @@ export function TaskList({
               <div className="flex flex-wrap items-center gap-2">
                 <button
                   onClick={() => onComplete(task.id)}
-                  className="rounded-full border border-zinc-700 px-4 py-2 text-xs font-semibold text-zinc-100 transition hover:border-zinc-500"
+                  disabled={isCompleted || isCompleting}
+                  className={`rounded-full border px-4 py-2 text-xs font-semibold transition ${
+                    isCompleted
+                      ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-200"
+                      : "border-zinc-700 text-zinc-100 hover:border-zinc-500"
+                  } ${isCompleting ? "opacity-60" : ""}`}
                 >
-                  {task.is_repeating ? "Log completion" : "Mark complete"}
+                  {isCompleting
+                    ? "Saving..."
+                    : isCompleted
+                    ? "Completed"
+                    : task.is_repeating
+                    ? "Log completion"
+                    : "Mark complete"}
                 </button>
                 <button
                   onClick={() => {

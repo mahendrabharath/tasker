@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import DatePicker from "react-datepicker";
+import { isSameDay, set as setDateParts, startOfDay } from "date-fns";
 import { supabase } from "@/lib/supabaseClient";
 import { useAuth } from "@/components/AuthProvider";
 
@@ -21,27 +22,45 @@ export function TaskForm({ onCreated, onCancel }: TaskFormProps) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [dueAt, setDueAt] = useState<Date | null>(null);
-  const now = new Date();
-  const todayStart = new Date(
-    now.getFullYear(),
-    now.getMonth(),
-    now.getDate()
-  );
-  const isToday =
-    dueAt &&
-    dueAt.getFullYear() === now.getFullYear() &&
-    dueAt.getMonth() === now.getMonth() &&
-    dueAt.getDate() === now.getDate();
-  const minTime = isToday ? now : todayStart;
-  const maxTime = new Date(
-    now.getFullYear(),
-    now.getMonth(),
-    now.getDate(),
-    23,
-    45,
-    0,
-    0
-  );
+  const [isPickerOpen, setIsPickerOpen] = useState(false);
+  const [dateError, setDateError] = useState<string | null>(null);
+  const [pickerNow, setPickerNow] = useState<Date>(new Date());
+  const selectedDate = dueAt ?? pickerNow;
+  const todayStart = startOfDay(pickerNow);
+  const isToday = isSameDay(selectedDate, pickerNow);
+  const roundToNextInterval = (date: Date, intervalMinutes: number) => {
+    const intervalMs = intervalMinutes * 60 * 1000;
+    return new Date(Math.ceil(date.getTime() / intervalMs) * intervalMs);
+  };
+  const minSelectableTime = isToday
+    ? roundToNextInterval(pickerNow, 15)
+    : startOfDay(selectedDate);
+  const minTime = minSelectableTime;
+  const maxTime = setDateParts(selectedDate, {
+    hours: 23,
+    minutes: 45,
+    seconds: 0,
+    milliseconds: 0,
+  });
+  const filterTime = (time: Date) => {
+    if (!isToday) return true;
+    return time.getTime() >= minSelectableTime.getTime();
+  };
+  const handleDateChange = (date: Date | null) => {
+    if (!date) {
+      setDateError(null);
+      setDueAt(null);
+      return;
+    }
+    const current = new Date();
+    if (isSameDay(date, current) && date.getTime() < current.getTime()) {
+      setDateError("Please choose a future time.");
+      setDueAt(roundToNextInterval(current, 15));
+      return;
+    }
+    setDateError(null);
+    setDueAt(date);
+  };
   const [isRepeating, setIsRepeating] = useState(false);
   const [repeatRule, setRepeatRule] = useState("daily");
   const [images, setImages] = useState<File[]>([]);
@@ -62,6 +81,12 @@ export function TaskForm({ onCreated, onCancel }: TaskFormProps) {
     if (!user) return;
     setLoading(true);
     setError(null);
+
+    if (dueAt && dueAt.getTime() < Date.now()) {
+      setError("Due time must be in the future.");
+      setLoading(false);
+      return;
+    }
 
     const { data: task, error: insertError } = await supabase
       .from("tasks")
@@ -150,14 +175,20 @@ export function TaskForm({ onCreated, onCancel }: TaskFormProps) {
             <div className="mt-2">
               <DatePicker
                 selected={dueAt}
-                onChange={(date: Date | null) => setDueAt(date)}
+                onChange={handleDateChange}
                 showTimeSelect
                 timeIntervals={15}
                 minDate={todayStart}
                 minTime={minTime}
                 maxTime={maxTime}
-                shouldCloseOnSelect
-                showPopperArrow={false}
+                filterTime={filterTime}
+                shouldCloseOnSelect={false}
+                open={isPickerOpen}
+                onInputClick={() => {
+                  setPickerNow(new Date());
+                  setIsPickerOpen(true);
+                }}
+                onClickOutside={() => setIsPickerOpen(false)}
                 dateFormat="MMM d, yyyy h:mm aa"
                 placeholderText="Select date and time"
                 className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm text-zinc-100 focus:border-zinc-500 focus:outline-none"
@@ -165,9 +196,33 @@ export function TaskForm({ onCreated, onCancel }: TaskFormProps) {
                 popperClassName="tasker-datepicker-popper"
                 popperPlacement="bottom-start"
                 withPortal
+                calendarContainer={({ className, children }) => (
+                  <div className={`${className} tasker-datepicker-shell`}>
+                    <div className="tasker-datepicker-body">{children}</div>
+                    <div className="tasker-datepicker-footer">
+                      <button
+                        type="button"
+                        onClick={() => setIsPickerOpen(false)}
+                        className="rounded-full border border-zinc-700 px-4 py-2 text-xs font-semibold text-zinc-100 transition hover:border-zinc-500"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setIsPickerOpen(false)}
+                        className="rounded-full bg-white px-4 py-2 text-xs font-semibold text-zinc-900 transition hover:bg-zinc-200"
+                      >
+                        Done
+                      </button>
+                    </div>
+                  </div>
+                )}
               />
             </div>
           </label>
+          {dateError && (
+            <p className="text-xs text-amber-300">{dateError}</p>
+          )}
           <label className="text-sm text-zinc-300">
             Repeat task
             <div className="mt-2 flex items-center gap-3 rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm text-zinc-100">

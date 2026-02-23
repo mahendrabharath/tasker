@@ -18,6 +18,10 @@ export default function AppPage() {
   const [loadingTasks, setLoadingTasks] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
+  const [filter, setFilter] = useState<"all" | "active" | "completed">("all");
+  const [completingIds, setCompletingIds] = useState<Set<string>>(
+    () => new Set()
+  );
   const formRef = useRef<HTMLDivElement | null>(null);
 
   const inspirations = useMemo(
@@ -98,17 +102,43 @@ export default function AppPage() {
   }, [showForm]);
 
   const handleComplete = async (taskId: string) => {
+    setCompletingIds((prev) => new Set(prev).add(taskId));
     const { error: insertError } = await supabase
       .from("task_completions")
       .insert({ task_id: taskId, completed_at: new Date().toISOString() });
 
     if (insertError) {
       setError(insertError.message);
+      setCompletingIds((prev) => {
+        const next = new Set(prev);
+        next.delete(taskId);
+        return next;
+      });
       return;
     }
 
     loadTasks();
+    setCompletingIds((prev) => {
+      const next = new Set(prev);
+      next.delete(taskId);
+      return next;
+    });
   };
+
+  const completedTasks = tasks.filter(
+    (task) => !task.is_repeating && (task.task_completions?.length ?? 0) > 0
+  );
+  const activeTasks = tasks.filter(
+    (task) =>
+      task.is_repeating ||
+      (task.task_completions?.length ?? 0) === 0
+  );
+  const filteredTasks =
+    filter === "completed"
+      ? completedTasks
+      : filter === "active"
+      ? activeTasks
+      : tasks;
 
   const handleDelete = async (taskId: string, imagePaths: string[]) => {
     setError(null);
@@ -202,6 +232,35 @@ export default function AppPage() {
 
         <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
           <div className="flex flex-col gap-6">
+            <div className="flex flex-wrap items-center justify-between gap-4 rounded-3xl border border-zinc-800 bg-zinc-900/70 px-6 py-4">
+              <div>
+                <h3 className="text-sm font-semibold text-zinc-100">
+                  Task filters
+                </h3>
+                <p className="text-xs text-zinc-400">
+                  {completedTasks.length} completed · {activeTasks.length} active
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-2 text-xs text-zinc-300">
+                {(["all", "active", "completed"] as const).map((key) => (
+                  <button
+                    key={key}
+                    onClick={() => setFilter(key)}
+                    className={`rounded-full border border-zinc-800 px-4 py-2 transition ${
+                      filter === key
+                        ? "bg-white text-zinc-900"
+                        : "hover:border-zinc-600"
+                    }`}
+                  >
+                    {key === "all"
+                      ? "All"
+                      : key === "active"
+                      ? "Active"
+                      : "Completed"}
+                  </button>
+                ))}
+              </div>
+            </div>
             {showForm && (
               <div ref={formRef}>
                 <TaskForm
@@ -219,10 +278,11 @@ export default function AppPage() {
               </p>
             )}
             <TaskList
-              tasks={tasks}
+            tasks={filteredTasks}
               loading={loadingTasks}
               onComplete={handleComplete}
               onDelete={handleDelete}
+            completingIds={completingIds}
             />
           </div>
           <div className="flex flex-col gap-6">

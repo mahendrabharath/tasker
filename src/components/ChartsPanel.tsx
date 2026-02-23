@@ -23,11 +23,14 @@ type ChartsPanelProps = {
 
 const chartOptions = ["bar", "line", "area"] as const;
 type ChartType = (typeof chartOptions)[number];
+const scopeOptions = ["repeating", "all"] as const;
+type ScopeType = (typeof scopeOptions)[number];
 
 export function ChartsPanel({ tasks }: ChartsPanelProps) {
   const [chartType, setChartType] = useState<ChartType>("bar");
+  const [scope, setScope] = useState<ScopeType>("repeating");
 
-  const data = useMemo(() => {
+  const buildData = (sourceTasks: TaskWithExtras[]) => {
     const start = subDays(new Date(), 13);
     const end = new Date();
     const days = eachDayOfInterval({ start, end });
@@ -36,8 +39,7 @@ export function ChartsPanel({ tasks }: ChartsPanelProps) {
       days.map((day) => [format(day, "MMM dd"), 0])
     );
 
-    tasks
-      .filter((task) => task.is_repeating)
+    sourceTasks
       .flatMap((task) => task.task_completions ?? [])
       .forEach((completion) => {
         const key = format(new Date(completion.completed_at), "MMM dd");
@@ -50,7 +52,12 @@ export function ChartsPanel({ tasks }: ChartsPanelProps) {
       day,
       count,
     }));
-  }, [tasks]);
+  };
+
+  const data = useMemo(() => {
+    const repeatingTasks = tasks.filter((task) => task.is_repeating);
+    return scope === "repeating" ? buildData(repeatingTasks) : buildData(tasks);
+  }, [tasks, scope]);
 
   const hasData = data.some((entry) => entry.count > 0);
 
@@ -59,13 +66,29 @@ export function ChartsPanel({ tasks }: ChartsPanelProps) {
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h2 className="text-lg font-semibold text-zinc-50">
-            Repetition tracking
+            Completion tracking
           </h2>
           <p className="text-xs text-zinc-400">
-            Completion activity for repeating tasks over 14 days.
+            Completion activity over the last 14 days.
           </p>
         </div>
-        <div className="flex rounded-full border border-zinc-800 bg-zinc-950 text-xs text-zinc-300">
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="flex rounded-full border border-zinc-800 bg-zinc-950 text-xs text-zinc-300">
+            {scopeOptions.map((option) => (
+              <button
+                key={option}
+                onClick={() => setScope(option)}
+                className={`rounded-full px-4 py-2 transition ${
+                  scope === option
+                    ? "bg-white text-zinc-900"
+                    : "hover:bg-zinc-800"
+                }`}
+              >
+                {option === "repeating" ? "Repeating" : "All"}
+              </button>
+            ))}
+          </div>
+          <div className="flex rounded-full border border-zinc-800 bg-zinc-950 text-xs text-zinc-300">
           {chartOptions.map((option) => (
             <button
               key={option}
@@ -79,6 +102,7 @@ export function ChartsPanel({ tasks }: ChartsPanelProps) {
               {option.toUpperCase()}
             </button>
           ))}
+        </div>
         </div>
       </div>
       <div className="mt-6 h-64">
