@@ -51,6 +51,8 @@ export default function DashboardPage() {
     []
   );
   const [inspiration, setInspiration] = useState(inspirations[0]);
+  const [heroImageLoaded, setHeroImageLoaded] = useState(false);
+
   useEffect(() => {
     const pick =
       inspirations[Math.floor(Math.random() * inspirations.length)] ??
@@ -58,6 +60,13 @@ export default function DashboardPage() {
     setInspiration(pick);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- run once on mount
   }, []);
+
+  useEffect(() => {
+    setHeroImageLoaded(false);
+    const img = new Image();
+    img.onload = () => setHeroImageLoaded(true);
+    img.src = inspiration.image;
+  }, [inspiration.image]);
 
   useEffect(() => {
     if (showForm && formRef.current) {
@@ -203,11 +212,22 @@ export default function DashboardPage() {
   return (
     <AppShell>
       <div className="flex flex-col gap-6">
-        <section className="relative min-h-[280px] overflow-hidden rounded-3xl border border-zinc-200 bg-zinc-100 md:min-h-[360px] dark:border-zinc-800 dark:bg-zinc-950">
+        <section
+          className="relative min-h-[280px] overflow-hidden rounded-3xl border border-zinc-200 bg-zinc-200 md:min-h-[360px] dark:border-zinc-800 dark:bg-zinc-900"
+          aria-label="Daily focus"
+        >
           <div
-            className="absolute inset-0 bg-cover bg-center"
+            className={`absolute inset-0 bg-cover bg-center transition-opacity duration-500 ${
+              heroImageLoaded ? "opacity-100" : "opacity-0"
+            }`}
             style={{ backgroundImage: `url(${inspiration.image})` }}
           />
+          {!heroImageLoaded && (
+            <div
+              className="absolute inset-0 animate-pulse bg-gradient-to-br from-zinc-300 via-zinc-200 to-zinc-300 dark:from-zinc-800 dark:via-zinc-900 dark:to-zinc-800"
+              aria-hidden
+            />
+          )}
           <div className="absolute inset-0 bg-gradient-to-br from-zinc-950/95 via-zinc-950/80 to-zinc-900/85" />
           <div className="relative z-10 flex flex-col gap-6 px-6 py-8 md:px-10 md:py-10">
             <div className="max-w-xl">
@@ -226,7 +246,7 @@ export default function DashboardPage() {
 
         <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
           <div className="flex flex-col gap-6">
-            <div className="flex flex-wrap items-center justify-between gap-4 rounded-3xl border border-zinc-200 bg-zinc-100/80 px-6 py-4 dark:border-zinc-800 dark:bg-zinc-900/70">
+            <div className="flex flex-col gap-4 rounded-3xl border border-zinc-200 bg-zinc-100/80 px-4 py-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:px-6 dark:border-zinc-800 dark:bg-zinc-900/70">
               <div>
                 <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
                   Task filters
@@ -235,10 +255,12 @@ export default function DashboardPage() {
                   {completedTasks.length} completed · {activeTasks.length} active
                 </p>
               </div>
-              <div className="flex flex-wrap items-center gap-2 text-xs text-zinc-600 dark:text-zinc-300">
+              <div className="flex min-h-[44px] flex-wrap items-center gap-2 text-xs text-zinc-600 dark:text-zinc-300">
                 <button
+                  type="button"
                   onClick={() => setShowForm((prev) => !prev)}
-                  className={`inline-flex items-center gap-2 rounded-full px-4 py-2 font-semibold transition ${
+                  aria-label={showForm ? "Hide create task form" : "Create new task"}
+                  className={`inline-flex min-h-[44px] min-w-[44px] items-center justify-center gap-2 rounded-full px-4 py-2 font-semibold transition focus:outline-none focus:ring-2 focus:ring-zinc-400 focus:ring-offset-2 dark:focus:ring-zinc-500 dark:focus:ring-offset-zinc-950 ${
                     showForm
                       ? "border border-zinc-300 text-zinc-800 hover:border-zinc-400 dark:border-zinc-800 dark:text-zinc-100 dark:hover:border-zinc-600"
                       : "border border-zinc-300 bg-zinc-900 text-white hover:bg-zinc-800 dark:border-zinc-800 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200"
@@ -252,13 +274,16 @@ export default function DashboardPage() {
                   {showForm ? "Hide form" : "Create task"}
                 </button>
                 <button
+                  type="button"
                   onClick={() => {
                     setDeleteMode((prev) => {
                       if (!prev) setSelectedIds(new Set());
                       return !prev;
                     });
                   }}
-                  className={`inline-flex items-center gap-2 rounded-full px-4 py-2 font-semibold transition ${
+                  aria-label={deleteMode ? "Cancel delete mode" : "Delete tasks"}
+                  aria-pressed={deleteMode}
+                  className={`inline-flex min-h-[44px] min-w-[44px] items-center justify-center gap-2 rounded-full px-4 py-2 font-semibold transition focus:outline-none focus:ring-2 focus:ring-zinc-400 focus:ring-offset-2 dark:focus:ring-zinc-500 dark:focus:ring-offset-zinc-950 ${
                     deleteMode
                       ? "border border-red-500/50 bg-red-500/20 text-red-600 dark:text-red-400"
                       : "border border-zinc-200 px-4 py-2 hover:border-zinc-400 dark:border-zinc-800 dark:hover:border-zinc-600"
@@ -270,8 +295,11 @@ export default function DashboardPage() {
                 {(["all", "active", "completed"] as const).map((key) => (
                   <button
                     key={key}
+                    type="button"
                     onClick={() => setFilter(key)}
-                    className={`rounded-full border px-4 py-2 transition ${
+                    aria-pressed={filter === key}
+                    aria-label={`Show ${key} tasks`}
+                    className={`min-h-[44px] min-w-[44px] rounded-full border px-4 py-2 transition focus:outline-none focus:ring-2 focus:ring-zinc-400 focus:ring-offset-2 dark:focus:ring-zinc-500 dark:focus:ring-offset-zinc-950 ${
                       filter === key
                         ? "border-zinc-300 bg-zinc-900 text-white dark:border-zinc-800 dark:bg-white dark:text-zinc-900"
                         : "border-zinc-200 hover:border-zinc-400 dark:border-zinc-800 dark:hover:border-zinc-600"

@@ -73,7 +73,7 @@ export function TaskList({
   };
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-4" role="list" aria-label="Task list">
       {deleteMode && (
         <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-zinc-200 bg-zinc-100/80 px-4 py-3 dark:border-zinc-800 dark:bg-zinc-900/70">
           <span className="text-sm text-zinc-600 dark:text-zinc-300">
@@ -81,15 +81,19 @@ export function TaskList({
           </span>
           <div className="flex gap-2">
             <button
+              type="button"
               onClick={onCancelDelete}
-              className="rounded-full border border-zinc-300 px-4 py-2 text-xs font-semibold text-zinc-700 transition hover:border-zinc-400 dark:border-zinc-700 dark:text-zinc-300 dark:hover:border-zinc-600"
+              aria-label="Cancel delete mode"
+              className="min-h-[44px] rounded-full border border-zinc-300 px-4 py-2 text-xs font-semibold text-zinc-700 transition hover:border-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-400 focus:ring-offset-2 dark:border-zinc-700 dark:text-zinc-300 dark:hover:border-zinc-600 dark:focus:ring-zinc-500 dark:focus:ring-offset-zinc-950"
             >
               Cancel
             </button>
             <button
+              type="button"
               onClick={handleDeleteSelected}
               disabled={selectedIds.size === 0}
-              className="rounded-full border border-red-500/40 bg-red-500/10 px-4 py-2 text-xs font-semibold text-red-600 transition hover:bg-red-500/20 disabled:opacity-50 dark:text-red-400"
+              aria-label={`Delete ${selectedIds.size} selected task${selectedIds.size !== 1 ? "s" : ""}`}
+              className="min-h-[44px] rounded-full border border-red-500/40 bg-red-500/10 px-4 py-2 text-xs font-semibold text-red-600 transition hover:bg-red-500/20 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-offset-2 dark:text-red-400 dark:focus:ring-red-500 dark:focus:ring-offset-zinc-950 disabled:focus:ring-0"
             >
               Delete selected
             </button>
@@ -116,8 +120,10 @@ export function TaskList({
         const isSelected = selectedIds.has(task.id);
 
         return (
-          <div
+          <article
             key={task.id}
+            role="listitem"
+            aria-label={`Task: ${task.title}`}
             className={`rounded-3xl border p-6 transition ${
               deleteMode
                 ? isSelected
@@ -218,9 +224,15 @@ export function TaskList({
                 <div className="flex flex-wrap items-center gap-2">
                   {!isCompleted && (
                     <button
+                      type="button"
                       onClick={() => onComplete(task.id)}
                       disabled={isCompleting}
-                      className={`rounded-full border border-zinc-400 px-4 py-2 text-xs font-semibold text-zinc-800 transition hover:border-zinc-500 dark:border-zinc-700 dark:text-zinc-100 dark:hover:border-zinc-500 ${isCompleting ? "opacity-60" : ""}`}
+                      aria-label={
+                        task.is_repeating
+                          ? `Log completion for ${task.title}`
+                          : `Mark ${task.title} as complete`
+                      }
+                      className={`min-h-[44px] rounded-full border border-zinc-400 px-4 py-2 text-xs font-semibold text-zinc-800 transition hover:border-zinc-500 focus:outline-none focus:ring-2 focus:ring-zinc-400 focus:ring-offset-2 dark:border-zinc-700 dark:text-zinc-100 dark:hover:border-zinc-500 dark:focus:ring-zinc-500 dark:focus:ring-offset-zinc-950 ${isCompleting ? "opacity-60" : ""}`}
                     >
                       {isCompleting
                         ? "Saving..."
@@ -248,7 +260,7 @@ export function TaskList({
                 ))}
               </div>
             )}
-          </div>
+          </article>
         );
       })}
     </div>

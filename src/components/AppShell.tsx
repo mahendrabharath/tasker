@@ -51,7 +51,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               )}
             </div>
           </div>
-          <nav className="no-scrollbar flex w-full flex-nowrap gap-2 overflow-x-auto text-xs text-zinc-600 sm:flex-wrap dark:text-zinc-300">
+          <nav
+            className="no-scrollbar flex w-full flex-nowrap gap-2 overflow-x-auto text-xs text-zinc-600 sm:flex-wrap dark:text-zinc-300"
+            aria-label="Main navigation"
+          >
             {navItems.map((item) => {
               const isActive = pathname === item.href;
               const Icon = item.icon;
@@ -59,7 +62,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 <Link
                   key={item.href}
                   href={item.href}
-                  className={`whitespace-nowrap rounded-full border px-4 py-2 transition sm:px-4 ${
+                  aria-current={isActive ? "page" : undefined}
+                  className={`whitespace-nowrap rounded-full border px-4 py-2 transition focus:outline-none focus:ring-2 focus:ring-zinc-400 focus:ring-offset-2 dark:focus:ring-zinc-500 dark:focus:ring-offset-zinc-950 sm:px-4 ${
                     isActive
                       ? "border-zinc-300 bg-zinc-900 text-white dark:border-zinc-800 dark:bg-white dark:text-zinc-900"
                       : "border-zinc-200 hover:border-zinc-400 dark:border-zinc-800 dark:hover:border-zinc-600"
