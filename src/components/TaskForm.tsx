@@ -147,30 +147,30 @@ export function TaskForm({ onCreated, onCancel }: TaskFormProps) {
   };
 
   return (
-    <section className="rounded-3xl border border-zinc-800 bg-zinc-900/70 p-6">
-      <h2 className="text-lg font-semibold text-zinc-50">Create a task</h2>
+    <section className="rounded-3xl border border-zinc-200 bg-zinc-100/80 p-6 dark:border-zinc-800 dark:bg-zinc-900/70">
+      <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">Create a task</h2>
       <form className="mt-4 flex flex-col gap-4" onSubmit={handleSubmit}>
-        <label className="text-sm text-zinc-300">
+        <label className="text-sm text-zinc-600 dark:text-zinc-300">
           Title
           <input
             type="text"
             required
             value={title}
             onChange={(event) => setTitle(event.target.value)}
-            className="mt-2 w-full rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm text-zinc-100 focus:border-zinc-500 focus:outline-none"
+            className="mt-2 w-full rounded-xl border border-zinc-300 bg-white px-4 py-3 text-sm text-zinc-900 focus:border-zinc-500 focus:outline-none dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100"
           />
         </label>
-        <label className="text-sm text-zinc-300">
+        <label className="text-sm text-zinc-600 dark:text-zinc-300">
           Description
           <textarea
             rows={3}
             value={description}
             onChange={(event) => setDescription(event.target.value)}
-            className="mt-2 w-full rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm text-zinc-100 focus:border-zinc-500 focus:outline-none"
+            className="mt-2 w-full rounded-xl border border-zinc-300 bg-white px-4 py-3 text-sm text-zinc-900 focus:border-zinc-500 focus:outline-none dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100"
           />
         </label>
         <div className="grid gap-4 md:grid-cols-2">
-          <label className="text-sm text-zinc-300">
+          <label className="text-sm text-zinc-600 dark:text-zinc-300">
             Due date & time
             <div className="mt-2">
               <DatePicker
@@ -191,7 +191,7 @@ export function TaskForm({ onCreated, onCancel }: TaskFormProps) {
                 onClickOutside={() => setIsPickerOpen(false)}
                 dateFormat="MMM d, yyyy h:mm aa"
                 placeholderText="Select date and time"
-                className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm text-zinc-100 focus:border-zinc-500 focus:outline-none"
+                className="w-full rounded-xl border border-zinc-300 bg-white px-4 py-3 text-sm text-zinc-900 focus:border-zinc-500 focus:outline-none dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100"
                 calendarClassName="tasker-datepicker"
                 popperClassName="tasker-datepicker-popper"
                 popperPlacement="bottom-start"
@@ -228,29 +228,29 @@ export function TaskForm({ onCreated, onCancel }: TaskFormProps) {
             </div>
           </label>
           {dateError && (
-            <p className="text-xs text-amber-300">{dateError}</p>
+            <p className="text-xs text-amber-600 dark:text-amber-300">{dateError}</p>
           )}
-          <label className="text-sm text-zinc-300">
+          <label className="text-sm text-zinc-600 dark:text-zinc-300">
             Repeat task
-            <div className="mt-2 flex items-center gap-3 rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm text-zinc-100">
+            <div className="mt-2 flex items-center gap-3 rounded-xl border border-zinc-300 bg-white px-4 py-3 text-sm text-zinc-900 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100">
               <input
                 type="checkbox"
                 checked={isRepeating}
                 onChange={(event) => setIsRepeating(event.target.checked)}
               />
-              <span className="text-xs text-zinc-400">
+              <span className="text-xs text-zinc-500 dark:text-zinc-400">
                 Enable repetition tracking
               </span>
             </div>
           </label>
         </div>
         {isRepeating && (
-          <label className="text-sm text-zinc-300">
+          <label className="text-sm text-zinc-600 dark:text-zinc-300">
             Repeat cadence
             <select
               value={repeatRule}
               onChange={(event) => setRepeatRule(event.target.value)}
-              className="mt-2 w-full rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm text-zinc-100 focus:border-zinc-500 focus:outline-none"
+              className="mt-2 w-full rounded-xl border border-zinc-300 bg-white px-4 py-3 text-sm text-zinc-900 focus:border-zinc-500 focus:outline-none dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100"
             >
               {repeatOptions.map((option) => (
                 <option key={option.value} value={option.value}>
@@ -260,7 +260,7 @@ export function TaskForm({ onCreated, onCancel }: TaskFormProps) {
             </select>
           </label>
         )}
-        <label className="text-sm text-zinc-300">
+        <label className="text-sm text-zinc-600 dark:text-zinc-300">
           Task images
           <input
             type="file"
@@ -269,16 +269,16 @@ export function TaskForm({ onCreated, onCancel }: TaskFormProps) {
             onChange={(event) =>
               setImages(Array.from(event.target.files ?? []))
             }
-            className="mt-2 w-full rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm text-zinc-100 file:mr-4 file:rounded-lg file:border-0 file:bg-zinc-800 file:px-3 file:py-2 file:text-xs file:text-zinc-100"
+            className="mt-2 w-full rounded-xl border border-zinc-300 bg-white px-4 py-3 text-sm text-zinc-900 file:mr-4 file:rounded-lg file:border-0 file:bg-zinc-200 file:px-3 file:py-2 file:text-xs file:text-zinc-800 focus:border-zinc-500 focus:outline-none dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100 dark:file:bg-zinc-800 dark:file:text-zinc-100"
           />
           {images.length > 0 && (
-            <p className="mt-2 text-xs text-zinc-500">
+            <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-500">
               {images.length} image(s) selected
             </p>
           )}
         </label>
         {error && (
-          <p className="rounded-xl border border-red-500/40 bg-red-500/10 p-3 text-xs text-red-300">
+          <p className="rounded-xl border border-red-500/40 bg-red-500/10 p-3 text-xs text-red-700 dark:text-red-300">
             {error}
           </p>
         )}
@@ -286,7 +286,7 @@ export function TaskForm({ onCreated, onCancel }: TaskFormProps) {
           <button
             type="submit"
             disabled={loading}
-            className="rounded-full bg-white px-6 py-3 text-sm font-semibold text-zinc-900 transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-70"
+            className="rounded-full border border-zinc-300 bg-zinc-900 px-6 py-3 text-sm font-semibold text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-70 dark:border-zinc-800 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200"
           >
             {loading ? "Saving..." : "Create task"}
           </button>
@@ -294,7 +294,7 @@ export function TaskForm({ onCreated, onCancel }: TaskFormProps) {
             <button
               type="button"
               onClick={onCancel}
-              className="rounded-full border border-zinc-700 px-6 py-3 text-sm font-semibold text-zinc-100 transition hover:border-zinc-500"
+              className="rounded-full border border-zinc-300 px-6 py-3 text-sm font-semibold text-zinc-800 transition hover:border-zinc-400 dark:border-zinc-700 dark:text-zinc-100 dark:hover:border-zinc-500"
             >
               Cancel
             </button>

@@ -5,6 +5,8 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useMemo,
+  useRef,
   useState,
 } from "react";
 import { supabase } from "@/lib/supabaseClient";
@@ -23,12 +25,16 @@ const TasksContext = createContext<TasksContextValue | undefined>(undefined);
 
 export function TasksProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
+  const userId = user?.id ?? null;
   const [tasks, setTasks] = useState<TaskWithExtras[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const loadingRef = useRef(false);
 
   const loadTasks = useCallback(async () => {
-    if (!user) return;
+    if (!userId) return;
+    if (loadingRef.current) return;
+    loadingRef.current = true;
     setLoading(true);
     setError(null);
 
@@ -41,6 +47,8 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
         ascending: false,
       });
 
+    loadingRef.current = false;
+
     if (fetchError) {
       setError(fetchError.message);
       setLoading(false);
@@ -49,35 +57,38 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
 
     setTasks(data ?? []);
     setLoading(false);
-  }, [user]);
+  }, [userId]);
 
   useEffect(() => {
-    if (user) {
+    if (userId) {
       loadTasks();
     } else {
       setTasks([]);
       setLoading(false);
     }
-  }, [user, loadTasks]);
+  }, [userId, loadTasks]);
 
   useEffect(() => {
     const handleVisibilityChange = () => {
-      if (document.visibilityState === "visible" && user) {
+      if (document.visibilityState === "visible" && userId) {
         loadTasks();
       }
     };
     document.addEventListener("visibilitychange", handleVisibilityChange);
     return () =>
       document.removeEventListener("visibilitychange", handleVisibilityChange);
-  }, [user, loadTasks]);
+  }, [userId, loadTasks]);
 
-  const value: TasksContextValue = {
-    tasks,
-    loading,
-    error,
-    setError,
-    reload: loadTasks,
-  };
+  const value = useMemo<TasksContextValue>(
+    () => ({
+      tasks,
+      loading,
+      error,
+      setError,
+      reload: loadTasks,
+    }),
+    [tasks, loading, error, loadTasks]
+  );
 
   return (
     <TasksContext.Provider value={value}>{children}</TasksContext.Provider>

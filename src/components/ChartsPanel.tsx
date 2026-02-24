@@ -134,56 +134,56 @@ export function ChartsPanel({ tasks }: ChartsPanelProps) {
       : "last 7 days";
 
   return (
-    <section className="rounded-3xl border border-zinc-800 bg-zinc-900/70 p-6">
+    <section className="rounded-3xl border border-zinc-200 bg-zinc-100/80 p-6 dark:border-zinc-800 dark:bg-zinc-900/70">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h2 className="text-lg font-semibold text-zinc-50">
+          <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">
             Completion tracking
           </h2>
-          <p className="text-xs text-zinc-400">
+          <p className="text-xs text-zinc-500 dark:text-zinc-400">
             Tasks completed over the {rangeLabel}. Hover for task names.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <div className="flex rounded-full border border-zinc-800 bg-zinc-950 text-xs text-zinc-300">
+          <div className="flex rounded-full border border-zinc-200 bg-zinc-100 text-xs text-zinc-600 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300">
             {rangeOptions.map((option) => (
               <button
                 key={option.id}
                 onClick={() => setRange(option.id)}
                 className={`rounded-full px-4 py-2 transition ${
                   range === option.id
-                    ? "bg-white text-zinc-900"
-                    : "hover:bg-zinc-800"
+                    ? "bg-zinc-900 text-white dark:bg-white dark:text-zinc-900"
+                    : "hover:bg-zinc-200 dark:hover:bg-zinc-800"
                 }`}
               >
                 {option.label}
               </button>
             ))}
           </div>
-          <div className="flex rounded-full border border-zinc-800 bg-zinc-950 text-xs text-zinc-300">
+          <div className="flex rounded-full border border-zinc-200 bg-zinc-100 text-xs text-zinc-600 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300">
             {scopeOptions.map((option) => (
               <button
                 key={option}
                 onClick={() => setScope(option)}
                 className={`rounded-full px-4 py-2 transition ${
                   scope === option
-                    ? "bg-white text-zinc-900"
-                    : "hover:bg-zinc-800"
+                    ? "bg-zinc-900 text-white dark:bg-white dark:text-zinc-900"
+                    : "hover:bg-zinc-200 dark:hover:bg-zinc-800"
                 }`}
               >
                 {option === "repeating" ? "Repeating" : "All"}
               </button>
             ))}
           </div>
-          <div className="flex rounded-full border border-zinc-800 bg-zinc-950 text-xs text-zinc-300">
+          <div className="flex rounded-full border border-zinc-200 bg-zinc-100 text-xs text-zinc-600 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300">
             {chartOptions.map((option) => (
               <button
                 key={option}
                 onClick={() => setChartType(option)}
                 className={`rounded-full px-4 py-2 transition ${
                   chartType === option
-                    ? "bg-white text-zinc-900"
-                    : "hover:bg-zinc-800"
+                    ? "bg-zinc-900 text-white dark:bg-white dark:text-zinc-900"
+                    : "hover:bg-zinc-200 dark:hover:bg-zinc-800"
                 }`}
               >
                 {option.toUpperCase()}
@@ -194,7 +194,7 @@ export function ChartsPanel({ tasks }: ChartsPanelProps) {
       </div>
       <div className="mt-6 h-64">
         {!hasData ? (
-          <div className="flex h-full items-center justify-center rounded-2xl border border-dashed border-zinc-800 text-sm text-zinc-400">
+          <div className="flex h-full items-center justify-center rounded-2xl border border-dashed border-zinc-300 text-sm text-zinc-500 dark:border-zinc-800 dark:text-zinc-400">
             No completion data yet. Log completions to see trends.
           </div>
         ) : (

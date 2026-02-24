@@ -143,26 +143,26 @@ export function NotificationPanel({ tasks, onComplete }: NotificationPanelProps)
   };
 
   return (
-    <section className="rounded-3xl border border-zinc-800 bg-zinc-900/70 p-6">
+    <section className="rounded-3xl border border-zinc-200 bg-zinc-100/80 p-6 dark:border-zinc-800 dark:bg-zinc-900/70">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h2 className="text-lg font-semibold text-zinc-50">
+          <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">
             Notifications
           </h2>
-          <p className="text-xs text-zinc-400">
+          <p className="text-xs text-zinc-500 dark:text-zinc-400">
             Push notifications delivered even when the browser is closed.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
           <button
             onClick={enablePush}
-            className="rounded-full border border-zinc-700 px-4 py-2 text-xs font-semibold text-zinc-100 transition hover:border-zinc-500"
+            className="rounded-full border border-zinc-300 px-4 py-2 text-xs font-semibold text-zinc-800 transition hover:border-zinc-400 dark:border-zinc-700 dark:text-zinc-100 dark:hover:border-zinc-500"
           >
             {status === "enabled" ? "Notifications enabled" : "Enable push"}
           </button>
           <button
             onClick={sendTest}
-            className="rounded-full border border-zinc-700 px-4 py-2 text-xs font-semibold text-zinc-100 transition hover:border-zinc-500"
+            className="rounded-full border border-zinc-300 px-4 py-2 text-xs font-semibold text-zinc-800 transition hover:border-zinc-400 dark:border-zinc-700 dark:text-zinc-100 dark:hover:border-zinc-500"
           >
             Send test
           </button>
@@ -172,8 +172,8 @@ export function NotificationPanel({ tasks, onComplete }: NotificationPanelProps)
         <p
           className={`mt-3 rounded-2xl border px-4 py-3 text-xs ${
             status === "error"
-              ? "border-red-500/40 bg-red-500/10 text-red-300"
-              : "border-emerald-500/40 bg-emerald-500/10 text-emerald-200"
+              ? "border-red-500/40 bg-red-500/10 text-red-700 dark:text-red-300"
+              : "border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-200"
           }`}
         >
           {statusMessage}
@@ -181,7 +181,7 @@ export function NotificationPanel({ tasks, onComplete }: NotificationPanelProps)
       )}
       <div className="mt-4">
         {upcomingTasks.length === 0 ? (
-          <p className="text-sm text-zinc-400">
+          <p className="text-sm text-zinc-500 dark:text-zinc-400">
             No upcoming tasks in the next 6 hours.
           </p>
         ) : (
@@ -189,16 +189,16 @@ export function NotificationPanel({ tasks, onComplete }: NotificationPanelProps)
             {upcomingTasks.map(({ task, due }) => (
               <div
                 key={task.id}
-                className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-zinc-800 bg-zinc-950/60 px-4 py-3 text-sm text-zinc-200"
+                className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-800 dark:border-zinc-800 dark:bg-zinc-950/60 dark:text-zinc-200"
               >
                 <div>
                   <p className="font-medium">{task.title}</p>
-                  <p className="text-xs text-zinc-500">
+                  <p className="text-xs text-zinc-500 dark:text-zinc-500">
                     Due in {formatDistanceToNowStrict(due)}
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-xs text-zinc-400">
+                  <span className="text-xs text-zinc-500 dark:text-zinc-400">
                     {due.toLocaleTimeString([], {
                       hour: "2-digit",
                       minute: "2-digit",

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ChevronUp, Plus } from "lucide-react";
+import { ChevronUp, Plus, Trash2 } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
 import { useTasks } from "@/hooks/useTasks";
@@ -14,6 +14,8 @@ export default function DashboardPage() {
   const { tasks, loading: loadingTasks, error, setError, reload } = useTasks();
   const [showForm, setShowForm] = useState(false);
   const [filter, setFilter] = useState<"all" | "active" | "completed">("all");
+  const [deleteMode, setDeleteMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
   const [completingIds, setCompletingIds] = useState<Set<string>>(
     () => new Set()
   );
@@ -54,7 +56,8 @@ export default function DashboardPage() {
       inspirations[Math.floor(Math.random() * inspirations.length)] ??
       inspirations[0];
     setInspiration(pick);
-  }, [inspirations]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- run once on mount
+  }, []);
 
   useEffect(() => {
     if (showForm && formRef.current) {
@@ -101,6 +104,18 @@ export default function DashboardPage() {
       ? activeTasks
       : tasks;
 
+  const sortedTasks = useMemo(() => {
+    const list = [...filteredTasks];
+    const isCompleted = (t: (typeof filteredTasks)[0]) =>
+      !t.is_repeating && (t.task_completions?.length ?? 0) > 0;
+    return list.sort((a, b) => {
+      const aDone = isCompleted(a);
+      const bDone = isCompleted(b);
+      if (aDone === bDone) return 0;
+      return aDone ? 1 : -1;
+    });
+  }, [filteredTasks]);
+
   const handleDelete = async (taskId: string, imagePaths: string[]) => {
     setError(null);
 
@@ -128,9 +143,54 @@ export default function DashboardPage() {
     reload();
   };
 
+  const handleDeleteSelected = async (
+    taskIds: string[],
+    imagePathsByTask: Map<string, string[]>
+  ) => {
+    setError(null);
+    const allPaths: string[] = [];
+    imagePathsByTask.forEach((paths) => allPaths.push(...paths));
+
+    if (allPaths.length > 0) {
+      const { error: storageError } = await supabase.storage
+        .from("task-images")
+        .remove(allPaths);
+
+      if (storageError) {
+        setError(storageError.message);
+        return;
+      }
+    }
+
+    for (const taskId of taskIds) {
+      const { error: deleteError } = await supabase
+        .from("tasks")
+        .delete()
+        .eq("id", taskId);
+
+      if (deleteError) {
+        setError(deleteError.message);
+        return;
+      }
+    }
+
+    setDeleteMode(false);
+    setSelectedIds(new Set());
+    reload();
+  };
+
+  const handleSelect = (taskId: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(taskId)) next.delete(taskId);
+      else next.add(taskId);
+      return next;
+    });
+  };
+
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center text-sm text-zinc-400">
+      <div className="flex min-h-screen items-center justify-center text-sm text-zinc-500 dark:text-zinc-400">
         Loading your workspace...
       </div>
     );
@@ -143,7 +203,7 @@ export default function DashboardPage() {
   return (
     <AppShell>
       <div className="flex flex-col gap-6">
-        <section className="relative min-h-[280px] overflow-hidden rounded-3xl border border-zinc-800 bg-zinc-950 md:min-h-[360px]">
+        <section className="relative min-h-[280px] overflow-hidden rounded-3xl border border-zinc-200 bg-zinc-100 md:min-h-[360px] dark:border-zinc-800 dark:bg-zinc-950">
           <div
             className="absolute inset-0 bg-cover bg-center"
             style={{ backgroundImage: `url(${inspiration.image})` }}
@@ -151,7 +211,7 @@ export default function DashboardPage() {
           <div className="absolute inset-0 bg-gradient-to-br from-zinc-950/95 via-zinc-950/80 to-zinc-900/85" />
           <div className="relative z-10 flex flex-col gap-6 px-6 py-8 md:px-10 md:py-10">
             <div className="max-w-xl">
-              <p className="text-xs uppercase tracking-[0.3em] text-zinc-400">
+              <p className="text-xs uppercase tracking-[0.3em] text-zinc-300">
                 Daily focus
               </p>
               <h2 className="mt-3 text-2xl font-semibold text-zinc-50 md:text-3xl">
@@ -166,22 +226,22 @@ export default function DashboardPage() {
 
         <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
           <div className="flex flex-col gap-6">
-            <div className="flex flex-wrap items-center justify-between gap-4 rounded-3xl border border-zinc-800 bg-zinc-900/70 px-6 py-4">
+            <div className="flex flex-wrap items-center justify-between gap-4 rounded-3xl border border-zinc-200 bg-zinc-100/80 px-6 py-4 dark:border-zinc-800 dark:bg-zinc-900/70">
               <div>
-                <h3 className="text-sm font-semibold text-zinc-100">
+                <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
                   Task filters
                 </h3>
-                <p className="text-xs text-zinc-400">
+                <p className="text-xs text-zinc-500 dark:text-zinc-400">
                   {completedTasks.length} completed · {activeTasks.length} active
                 </p>
               </div>
-              <div className="flex flex-wrap items-center gap-2 text-xs text-zinc-300">
+              <div className="flex flex-wrap items-center gap-2 text-xs text-zinc-600 dark:text-zinc-300">
                 <button
                   onClick={() => setShowForm((prev) => !prev)}
                   className={`inline-flex items-center gap-2 rounded-full px-4 py-2 font-semibold transition ${
                     showForm
-                      ? "border border-zinc-800 text-zinc-100 hover:border-zinc-600"
-                      : "bg-white text-zinc-900 hover:bg-zinc-200"
+                      ? "border border-zinc-300 text-zinc-800 hover:border-zinc-400 dark:border-zinc-800 dark:text-zinc-100 dark:hover:border-zinc-600"
+                      : "border border-zinc-300 bg-zinc-900 text-white hover:bg-zinc-800 dark:border-zinc-800 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200"
                   }`}
                 >
                   {showForm ? (
@@ -191,14 +251,30 @@ export default function DashboardPage() {
                   )}
                   {showForm ? "Hide form" : "Create task"}
                 </button>
+                <button
+                  onClick={() => {
+                    setDeleteMode((prev) => {
+                      if (!prev) setSelectedIds(new Set());
+                      return !prev;
+                    });
+                  }}
+                  className={`inline-flex items-center gap-2 rounded-full px-4 py-2 font-semibold transition ${
+                    deleteMode
+                      ? "border border-red-500/50 bg-red-500/20 text-red-600 dark:text-red-400"
+                      : "border border-zinc-200 px-4 py-2 hover:border-zinc-400 dark:border-zinc-800 dark:hover:border-zinc-600"
+                  }`}
+                >
+                  <Trash2 className="h-4 w-4" aria-hidden="true" />
+                  Delete
+                </button>
                 {(["all", "active", "completed"] as const).map((key) => (
                   <button
                     key={key}
                     onClick={() => setFilter(key)}
-                    className={`rounded-full border border-zinc-800 px-4 py-2 transition ${
+                    className={`rounded-full border px-4 py-2 transition ${
                       filter === key
-                        ? "bg-white text-zinc-900"
-                        : "hover:border-zinc-600"
+                        ? "border-zinc-300 bg-zinc-900 text-white dark:border-zinc-800 dark:bg-white dark:text-zinc-900"
+                        : "border-zinc-200 hover:border-zinc-400 dark:border-zinc-800 dark:hover:border-zinc-600"
                     }`}
                   >
                     {key === "all"
@@ -222,20 +298,28 @@ export default function DashboardPage() {
               </div>
             )}
             {error && (
-              <p className="rounded-2xl border border-red-500/40 bg-red-500/10 p-4 text-sm text-red-300">
+              <p className="rounded-2xl border border-red-500/40 bg-red-500/10 p-4 text-sm text-red-700 dark:text-red-300">
                 {error}
               </p>
             )}
             <TaskList
-              tasks={filteredTasks}
+              tasks={sortedTasks}
               loading={loadingTasks}
               onComplete={handleComplete}
               onDelete={handleDelete}
+              onDeleteSelected={handleDeleteSelected}
               completingIds={completingIds}
+              deleteMode={deleteMode}
+              selectedIds={selectedIds}
+              onSelect={handleSelect}
+              onCancelDelete={() => {
+                setDeleteMode(false);
+                setSelectedIds(new Set());
+              }}
             />
           </div>
           <div className="flex flex-col gap-6">
-            <div className="rounded-3xl border border-zinc-800 bg-zinc-900/70 p-6 text-sm text-zinc-300">
+            <div className="rounded-3xl border border-zinc-200 bg-zinc-100/80 p-6 text-sm text-zinc-600 dark:border-zinc-800 dark:bg-zinc-900/70 dark:text-zinc-300">
               Your analytics and notification feeds now live in their own tabs.
               Explore the insights in Analytics or manage reminders in Notifications.
             </div>

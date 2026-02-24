@@ -61,7 +61,7 @@ export function FocusHeatmap({ tasks }: FocusHeatmapProps) {
   }, [tasks]);
 
   const getIntensity = (count: number) => {
-    if (count === 0) return "bg-zinc-900/60";
+    if (count === 0) return "bg-zinc-200 dark:bg-zinc-900/60";
     if (count === 1) return "bg-emerald-500/30";
     if (count === 2) return "bg-emerald-500/50";
     if (count === 3) return "bg-emerald-500/70";
@@ -69,17 +69,17 @@ export function FocusHeatmap({ tasks }: FocusHeatmapProps) {
   };
 
   return (
-    <section className="rounded-3xl border border-zinc-800 bg-zinc-900/70 p-6">
+    <section className="rounded-3xl border border-zinc-200 bg-zinc-100/80 p-6 dark:border-zinc-800 dark:bg-zinc-900/70">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h2 className="text-lg font-semibold text-zinc-50">Focus Heatmap</h2>
-          <p className="text-xs text-zinc-400">
+          <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">Focus Heatmap</h2>
+          <p className="text-xs text-zinc-500 dark:text-zinc-400">
             Daily completions over the last 12 weeks.
           </p>
         </div>
-        <div className="rounded-2xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-xs text-zinc-300">
+        <div className="rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-xs text-zinc-600 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300">
           Focus Score
-          <span className="ml-2 text-sm font-semibold text-zinc-50">
+          <span className="ml-2 text-sm font-semibold text-zinc-900 dark:text-zinc-50">
             {focusScore}%
           </span>
         </div>
@@ -97,7 +97,7 @@ export function FocusHeatmap({ tasks }: FocusHeatmapProps) {
                       ? `${format(cell.date, "MMM dd, yyyy")}: ${cell.count} completion${cell.count === 1 ? "" : "s"} — ${cell.taskNames.join(", ")}`
                       : format(cell.date, "MMM dd, yyyy")
                   }
-                  className={`h-3.5 w-3.5 rounded-sm border border-zinc-800 ${getIntensity(
+                  className={`h-3.5 w-3.5 rounded-sm border border-zinc-200 dark:border-zinc-800 ${getIntensity(
                     cell.count
                   )}`}
                 />
