@@ -161,25 +161,34 @@ You can use Supabase's scheduler to call the push endpoint directly.
 
 ```sql
 create extension if not exists pg_net;
+create extension if not exists pg_cron;
 
-select
-  cron.schedule(
-    'tasker-push-reminders',
-    '*/5 * * * *',
-    $$
-    select
-      net.http_post(
-        url := 'https://YOUR-VERCEL-DOMAIN/api/push/send?secret=YOUR_SECRET',
-        headers := jsonb_build_object('Content-Type', 'application/json'),
-        body := '{}'::jsonb
-      );
-    $$
-  );
+select cron.schedule(
+  'tasker-push-reminders',
+  '*/5 * * * *',
+  $$ select net.http_get(url := 'https://YOUR-VERCEL-DOMAIN/api/push/send?secret=YOUR_SECRET'); $$
+);
 ```
 
 2. Replace `YOUR-VERCEL-DOMAIN` and `YOUR_SECRET`.
 
 The SQL is also saved in `supabase/scheduler.sql`.
+
+## Debugging push notifications
+
+If test notifications work but task reminders don't:
+
+1. **Check the 5‑minute window** – Notifications are sent only for tasks due in the next 5 minutes. Create a task due in 2–3 minutes and wait for the next cron run.
+
+2. **Use the debug endpoint** – Run `yarn push:urls` to print the debug URL from your `.env.local`. Or call:
+   ```
+   https://YOUR-VERCEL-DOMAIN/api/push/send?secret=YOUR_SECRET&debug=1
+   ```
+   This returns diagnostic info (server time, tasks found, subscription count) without sending. Use it when a task is due soon to confirm the cron would find it.
+
+3. **Verify the cron** – In Supabase → Database → Extensions, ensure `pg_cron` and `pg_net` are enabled. Check cron job history if available.
+
+Add `NEXT_PUBLIC_APP_URL` to `.env.local` with your deployed URL (e.g. `https://tasker.vercel.app`) so `yarn push:urls` uses it.
 
 ## Hosting (free options)
 

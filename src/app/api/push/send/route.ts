@@ -14,8 +14,17 @@ type SubscriptionRow = {
 };
 
 export async function GET(request: Request) {
+  return handleSend(request);
+}
+
+export async function POST(request: Request) {
+  return handleSend(request);
+}
+
+async function handleSend(request: Request) {
   const url = new URL(request.url);
   const secret = url.searchParams.get("secret");
+  const debug = url.searchParams.get("debug") === "1";
   const expectedSecret = process.env.PUSH_CRON_SECRET;
 
   if (expectedSecret && secret !== expectedSecret) {
@@ -49,6 +58,28 @@ export async function GET(request: Request) {
 
   if (taskError) {
     return NextResponse.json({ error: taskError.message }, { status: 500 });
+  }
+
+  if (debug) {
+    const { count: subCount } = await supabaseAdmin
+      .from("push_subscriptions")
+      .select("*", { count: "exact", head: true });
+
+    return NextResponse.json({
+      debug: true,
+      serverTime: now.toISOString(),
+      serverTimeLocal: now.toString(),
+      horizon: horizon.toISOString(),
+      window: "Tasks due between now and 5 minutes from now (skipping if notified in last 5 min)",
+      tasksToSend: (tasks ?? []).map((t) => ({
+        id: t.id,
+        title: t.title,
+        due_at: t.due_at,
+        last_notified_at: t.last_notified_at,
+      })),
+      subscriptionCount: subCount ?? 0,
+      note: "Add ?debug=1 to the cron URL to see this. Remove it for normal operation.",
+    });
   }
 
   if (!tasks || tasks.length === 0) {
