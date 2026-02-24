@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ChevronDown, ChevronUp, Plus } from "lucide-react";
+import { ChevronUp, Plus } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
 import { useTasks } from "@/hooks/useTasks";
@@ -49,8 +49,6 @@ export default function DashboardPage() {
     []
   );
   const [inspiration, setInspiration] = useState(inspirations[0]);
-  const ToggleIcon = showForm ? ChevronUp : ChevronDown;
-
   useEffect(() => {
     const pick =
       inspirations[Math.floor(Math.random() * inspirations.length)] ??
@@ -179,18 +177,19 @@ export default function DashboardPage() {
               </div>
               <div className="flex flex-wrap items-center gap-2 text-xs text-zinc-300">
                 <button
-                  onClick={() => setShowForm(true)}
-                  className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 font-semibold text-zinc-900 transition hover:bg-zinc-200"
-                >
-                  <Plus className="h-4 w-4" aria-hidden="true" />
-                  Create task
-                </button>
-                <button
                   onClick={() => setShowForm((prev) => !prev)}
-                  className="inline-flex items-center gap-2 rounded-full border border-zinc-800 px-4 py-2 font-semibold text-zinc-100 transition hover:border-zinc-600"
+                  className={`inline-flex items-center gap-2 rounded-full px-4 py-2 font-semibold transition ${
+                    showForm
+                      ? "border border-zinc-800 text-zinc-100 hover:border-zinc-600"
+                      : "bg-white text-zinc-900 hover:bg-zinc-200"
+                  }`}
                 >
-                  <ToggleIcon className="h-4 w-4" aria-hidden="true" />
-                  {showForm ? "Hide form" : "Toggle form"}
+                  {showForm ? (
+                    <ChevronUp className="h-4 w-4" aria-hidden="true" />
+                  ) : (
+                    <Plus className="h-4 w-4" aria-hidden="true" />
+                  )}
+                  {showForm ? "Hide form" : "Create task"}
                 </button>
                 {(["all", "active", "completed"] as const).map((key) => (
                   <button

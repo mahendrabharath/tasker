@@ -1,13 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import {
-  addDays,
-  eachDayOfInterval,
-  format,
-  startOfWeek,
-  subDays,
-} from "date-fns";
+import { eachDayOfInterval, format, startOfDay, subDays } from "date-fns";
 import type { TaskWithExtras } from "@/lib/types";
 
 type FocusHeatmapProps = {
@@ -26,10 +20,9 @@ const TOTAL_DAYS = WEEK_COUNT * DAYS_PER_WEEK;
 
 export function FocusHeatmap({ tasks }: FocusHeatmapProps) {
   const { weeks, focusScore } = useMemo(() => {
-    const today = new Date();
-    const start = startOfWeek(subDays(today, TOTAL_DAYS - 1));
-    const end = addDays(start, TOTAL_DAYS - 1);
-    const days = eachDayOfInterval({ start, end });
+    const today = startOfDay(new Date());
+    const start = subDays(today, TOTAL_DAYS - 1);
+    const days = eachDayOfInterval({ start, end: today });
 
     const completionMap = new Map<string, { count: number; tasks: Set<string> }>();
     tasks.forEach((task) => {

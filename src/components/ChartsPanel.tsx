@@ -42,7 +42,7 @@ type RangeType = (typeof rangeOptions)[number]["id"];
 
 export function ChartsPanel({ tasks }: ChartsPanelProps) {
   const [chartType, setChartType] = useState<ChartType>("bar");
-  const [scope, setScope] = useState<ScopeType>("repeating");
+  const [scope, setScope] = useState<ScopeType>("all");
   const [range, setRange] = useState<RangeType>("7d");
 
   const buildData = (
@@ -114,11 +114,15 @@ export function ChartsPanel({ tasks }: ChartsPanelProps) {
     }));
   };
 
-  const data = useMemo(() => {
+  const sourceTasks = useMemo(() => {
     const repeatingTasks = tasks.filter((task) => task.is_repeating);
-    const source = scope === "repeating" ? repeatingTasks : tasks;
-    return buildData(source, range);
-  }, [tasks, scope, range]);
+    return scope === "repeating" ? repeatingTasks : tasks;
+  }, [tasks, scope]);
+
+  const data = useMemo(
+    () => buildData(sourceTasks, range),
+    [sourceTasks, range]
+  );
 
   const hasData = data.some((entry) => entry.count > 0);
 
@@ -191,7 +195,7 @@ export function ChartsPanel({ tasks }: ChartsPanelProps) {
       <div className="mt-6 h-64">
         {!hasData ? (
           <div className="flex h-full items-center justify-center rounded-2xl border border-dashed border-zinc-800 text-sm text-zinc-400">
-            No repetition data yet. Log completions to see trends.
+            No completion data yet. Log completions to see trends.
           </div>
         ) : (
           <ResponsiveContainer width="100%" height="100%">
