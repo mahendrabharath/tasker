@@ -192,6 +192,6 @@ Add `NEXT_PUBLIC_APP_URL` to `.env.local` with your deployed URL (e.g. `https://
 
 ## Hosting (free options)
 
-- Vercel (free) for Next.js frontend
+- Vercel (free) for Next.js frontend — deploys on push to main
 - Supabase (free) for Auth, Postgres, and Storage
 - Alternatives: Netlify or Cloudflare Pages for hosting
