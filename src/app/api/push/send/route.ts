@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import webpush from "web-push";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import { createCompleteToken } from "@/lib/notificationToken";
 
 export const runtime = "nodejs";
 
@@ -77,10 +78,13 @@ export async function GET(request: Request) {
     const subs = subscriptionMap.get(task.user_id) ?? [];
     if (subs.length === 0) continue;
 
+    const completeToken = createCompleteToken(task.id, task.user_id);
     const payload = JSON.stringify({
-      title: "Task reminder",
-      body: `${task.title} is due soon.`,
-      url: "/app",
+      title: task.title,
+      body: "Due soon",
+      url: "/app/dashboard",
+      taskId: task.id,
+      completeToken,
     });
 
     await Promise.all(

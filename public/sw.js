@@ -65,7 +65,14 @@ self.addEventListener("push", (event) => {
     body: data.body || "You have a task due soon.",
     icon: "/favicon.ico",
     badge: "/favicon.ico",
-    data: data.url || "/app",
+    data: {
+      url: data.url || "/app",
+      taskId: data.taskId,
+      completeToken: data.completeToken,
+    },
+    actions: data.taskId && data.completeToken
+      ? [{ action: "complete", title: "Mark complete" }]
+      : [],
   };
 
   event.waitUntil(self.registration.showNotification(title, options));
@@ -73,7 +80,26 @@ self.addEventListener("push", (event) => {
 
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
-  const targetUrl = event.notification.data || "/app";
+  const { url, taskId, completeToken } = event.notification.data || {};
+
+  if (event.action === "complete" && taskId && completeToken) {
+    event.waitUntil(
+      fetch("/api/tasks/complete-from-notification", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ taskId, token: completeToken }),
+      }).then(() => {
+        return self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clients) => {
+          if (clients.length > 0) {
+            clients[0].focus();
+          }
+        });
+      })
+    );
+    return;
+  }
+
+  const targetUrl = url || "/app";
   event.waitUntil(
     self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clients) => {
       for (const client of clients) {

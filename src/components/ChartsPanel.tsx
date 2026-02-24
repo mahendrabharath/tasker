@@ -14,7 +14,15 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { eachDayOfInterval, format, subDays } from "date-fns";
+import {
+  addHours,
+  eachDayOfInterval,
+  eachHourOfInterval,
+  format,
+  startOfHour,
+  subDays,
+  subHours,
+} from "date-fns";
 import type { TaskWithExtras } from "@/lib/types";
 
 type ChartsPanelProps = {
@@ -25,22 +33,68 @@ const chartOptions = ["bar", "line", "area"] as const;
 type ChartType = (typeof chartOptions)[number];
 const scopeOptions = ["repeating", "all"] as const;
 type ScopeType = (typeof scopeOptions)[number];
+const rangeOptions = [
+  { id: "12h", label: "12 hours" },
+  { id: "24h", label: "24 hours" },
+  { id: "7d", label: "Weekly" },
+] as const;
+type RangeType = (typeof rangeOptions)[number]["id"];
 
 export function ChartsPanel({ tasks }: ChartsPanelProps) {
   const [chartType, setChartType] = useState<ChartType>("bar");
   const [scope, setScope] = useState<ScopeType>("repeating");
+  const [range, setRange] = useState<RangeType>("7d");
 
-  const buildData = (sourceTasks: TaskWithExtras[]) => {
-    const start = subDays(new Date(), 13);
-    const end = new Date();
-    const days = eachDayOfInterval({ start, end });
+  const buildData = (
+    sourceTasks: TaskWithExtras[],
+    rangeType: RangeType
+  ): { label: string; count: number; taskNames: string[] }[] => {
+    const now = new Date();
 
-    const base = new Map(
-      days.map((day) => [
-        format(day, "MMM dd"),
-        { count: 0, tasks: new Set<string>() },
-      ])
-    );
+    if (rangeType === "12h" || rangeType === "24h") {
+      const hoursBack = rangeType === "12h" ? 12 : 24;
+      const start = subHours(now, hoursBack);
+      const hours = eachHourOfInterval({ start, end: addHours(now, 1) });
+
+      const base = new Map<
+        string,
+        { count: number; tasks: Set<string> }
+      >();
+      hours.forEach((hour) => {
+        const key = format(hour, "HH:mm");
+        base.set(key, { count: 0, tasks: new Set<string>() });
+      });
+
+      sourceTasks.forEach((task) => {
+        (task.task_completions ?? []).forEach((completion) => {
+          const completedAt = new Date(completion.completed_at);
+          if (completedAt < start || completedAt > now) return;
+          const hourKey = format(startOfHour(completedAt), "HH:mm");
+          const entry = base.get(hourKey);
+          if (entry) {
+            entry.count += 1;
+            entry.tasks.add(task.title);
+          }
+        });
+      });
+
+      return Array.from(base.entries()).map(([label, entry]) => ({
+        label,
+        count: entry.count,
+        taskNames: Array.from(entry.tasks),
+      }));
+    }
+
+    const start = subDays(now, 6);
+    const days = eachDayOfInterval({ start, end: now });
+    const base = new Map<
+      string,
+      { count: number; tasks: Set<string> }
+    >();
+    days.forEach((day) => {
+      const key = format(day, "MMM dd");
+      base.set(key, { count: 0, tasks: new Set<string>() });
+    });
 
     sourceTasks.forEach((task) => {
       (task.task_completions ?? []).forEach((completion) => {
@@ -53,8 +107,8 @@ export function ChartsPanel({ tasks }: ChartsPanelProps) {
       });
     });
 
-    return Array.from(base.entries()).map(([day, entry]) => ({
-      day,
+    return Array.from(base.entries()).map(([label, entry]) => ({
+      label,
       count: entry.count,
       taskNames: Array.from(entry.tasks),
     }));
@@ -62,10 +116,18 @@ export function ChartsPanel({ tasks }: ChartsPanelProps) {
 
   const data = useMemo(() => {
     const repeatingTasks = tasks.filter((task) => task.is_repeating);
-    return scope === "repeating" ? buildData(repeatingTasks) : buildData(tasks);
-  }, [tasks, scope]);
+    const source = scope === "repeating" ? repeatingTasks : tasks;
+    return buildData(source, range);
+  }, [tasks, scope, range]);
 
   const hasData = data.some((entry) => entry.count > 0);
+
+  const rangeLabel =
+    range === "12h"
+      ? "last 12 hours"
+      : range === "24h"
+      ? "last 24 hours"
+      : "last 7 days";
 
   return (
     <section className="rounded-3xl border border-zinc-800 bg-zinc-900/70 p-6">
@@ -75,10 +137,25 @@ export function ChartsPanel({ tasks }: ChartsPanelProps) {
             Completion tracking
           </h2>
           <p className="text-xs text-zinc-400">
-            Completion activity over the last 14 days.
+            Tasks completed over the {rangeLabel}. Hover for task names.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          <div className="flex rounded-full border border-zinc-800 bg-zinc-950 text-xs text-zinc-300">
+            {rangeOptions.map((option) => (
+              <button
+                key={option.id}
+                onClick={() => setRange(option.id)}
+                className={`rounded-full px-4 py-2 transition ${
+                  range === option.id
+                    ? "bg-white text-zinc-900"
+                    : "hover:bg-zinc-800"
+                }`}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
           <div className="flex rounded-full border border-zinc-800 bg-zinc-950 text-xs text-zinc-300">
             {scopeOptions.map((option) => (
               <button
@@ -95,20 +172,20 @@ export function ChartsPanel({ tasks }: ChartsPanelProps) {
             ))}
           </div>
           <div className="flex rounded-full border border-zinc-800 bg-zinc-950 text-xs text-zinc-300">
-          {chartOptions.map((option) => (
-            <button
-              key={option}
-              onClick={() => setChartType(option)}
-              className={`rounded-full px-4 py-2 transition ${
-                chartType === option
-                  ? "bg-white text-zinc-900"
-                  : "hover:bg-zinc-800"
-              }`}
-            >
-              {option.toUpperCase()}
-            </button>
-          ))}
-        </div>
+            {chartOptions.map((option) => (
+              <button
+                key={option}
+                onClick={() => setChartType(option)}
+                className={`rounded-full px-4 py-2 transition ${
+                  chartType === option
+                    ? "bg-white text-zinc-900"
+                    : "hover:bg-zinc-800"
+                }`}
+              >
+                {option.toUpperCase()}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
       <div className="mt-6 h-64">
@@ -121,7 +198,7 @@ export function ChartsPanel({ tasks }: ChartsPanelProps) {
             {chartType === "bar" && (
               <BarChart data={data}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
-                <XAxis dataKey="day" stroke="#a1a1aa" />
+                <XAxis dataKey="label" stroke="#a1a1aa" />
                 <YAxis stroke="#a1a1aa" allowDecimals={false} />
                 <Tooltip content={<ChartTooltip />} />
                 <Bar dataKey="count" fill="#e4e4e7" radius={[6, 6, 0, 0]} />
@@ -130,7 +207,7 @@ export function ChartsPanel({ tasks }: ChartsPanelProps) {
             {chartType === "line" && (
               <LineChart data={data}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
-                <XAxis dataKey="day" stroke="#a1a1aa" />
+                <XAxis dataKey="label" stroke="#a1a1aa" />
                 <YAxis stroke="#a1a1aa" allowDecimals={false} />
                 <Tooltip content={<ChartTooltip />} />
                 <Line
@@ -144,7 +221,7 @@ export function ChartsPanel({ tasks }: ChartsPanelProps) {
             {chartType === "area" && (
               <AreaChart data={data}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
-                <XAxis dataKey="day" stroke="#a1a1aa" />
+                <XAxis dataKey="label" stroke="#a1a1aa" />
                 <YAxis stroke="#a1a1aa" allowDecimals={false} />
                 <Tooltip content={<ChartTooltip />} />
                 <Area
@@ -167,7 +244,9 @@ function ChartTooltip({
   payload,
 }: {
   active?: boolean;
-  payload?: Array<{ payload?: { day?: string; count?: number; taskNames?: string[] } }>;
+  payload?: Array<{
+    payload?: { label?: string; count?: number; taskNames?: string[] };
+  }>;
 }) {
   if (!active || !payload?.length) return null;
   const info = payload[0]?.payload;
@@ -175,13 +254,22 @@ function ChartTooltip({
   const names = info.taskNames ?? [];
 
   return (
-    <div className="rounded-xl border border-zinc-800 bg-zinc-950 px-3 py-2 text-xs text-zinc-200 shadow-lg">
-      <p className="font-semibold text-zinc-100">{info.day}</p>
-      <p className="text-zinc-300">{info.count ?? 0} completion(s)</p>
+    <div className="rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-xs text-zinc-200 shadow-lg min-w-[160px]">
+      <p className="font-semibold text-zinc-100">{info.label}</p>
+      <p className="mt-0.5 text-zinc-300">
+        {info.count ?? 0} completion{info.count !== 1 ? "s" : ""}
+      </p>
       {names.length > 0 && (
-        <p className="mt-1 text-zinc-400">
-          {names.join(", ")}
-        </p>
+        <div className="mt-2 border-t border-zinc-800 pt-2">
+          <p className="text-[10px] uppercase tracking-wider text-zinc-500">
+            Tasks completed
+          </p>
+          <ul className="mt-1 space-y-0.5 text-zinc-300">
+            {names.map((name) => (
+              <li key={name}>• {name}</li>
+            ))}
+          </ul>
+        </div>
       )}
     </div>
   );

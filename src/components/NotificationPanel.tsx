@@ -7,14 +7,16 @@ import { supabase } from "@/lib/supabaseClient";
 
 type NotificationPanelProps = {
   tasks: TaskWithExtras[];
+  onComplete?: (taskId: string) => Promise<void>;
 };
 
-export function NotificationPanel({ tasks }: NotificationPanelProps) {
+export function NotificationPanel({ tasks, onComplete }: NotificationPanelProps) {
   const [permission, setPermission] = useState<NotificationPermission>(
     typeof window !== "undefined" ? Notification.permission : "default"
   );
   const [status, setStatus] = useState<"idle" | "enabled" | "error">("idle");
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [completingId, setCompletingId] = useState<string | null>(null);
   const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
 
   const upcomingTasks = useMemo(() => {
@@ -187,7 +189,7 @@ export function NotificationPanel({ tasks }: NotificationPanelProps) {
             {upcomingTasks.map(({ task, due }) => (
               <div
                 key={task.id}
-                className="flex items-center justify-between rounded-2xl border border-zinc-800 bg-zinc-950/60 px-4 py-3 text-sm text-zinc-200"
+                className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-zinc-800 bg-zinc-950/60 px-4 py-3 text-sm text-zinc-200"
               >
                 <div>
                   <p className="font-medium">{task.title}</p>
@@ -195,12 +197,27 @@ export function NotificationPanel({ tasks }: NotificationPanelProps) {
                     Due in {formatDistanceToNowStrict(due)}
                   </p>
                 </div>
-                <span className="text-xs text-zinc-400">
-                  {due.toLocaleTimeString([], {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-zinc-400">
+                    {due.toLocaleTimeString([], {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </span>
+                  {onComplete && (
+                    <button
+                      onClick={async () => {
+                        setCompletingId(task.id);
+                        await onComplete(task.id);
+                        setCompletingId(null);
+                      }}
+                      disabled={completingId === task.id}
+                      className="rounded-full border border-emerald-500/40 bg-emerald-500/10 px-3 py-1.5 text-xs font-semibold text-emerald-200 transition hover:bg-emerald-500/20 disabled:opacity-60"
+                    >
+                      {completingId === task.id ? "Saving..." : "Mark complete"}
+                    </button>
+                  )}
+                </div>
               </div>
             ))}
           </div>

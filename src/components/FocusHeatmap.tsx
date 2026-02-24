@@ -17,6 +17,7 @@ type FocusHeatmapProps = {
 type DayCell = {
   date: Date;
   count: number;
+  taskNames: string[];
 };
 
 const WEEK_COUNT = 12;
@@ -30,19 +31,24 @@ export function FocusHeatmap({ tasks }: FocusHeatmapProps) {
     const end = addDays(start, TOTAL_DAYS - 1);
     const days = eachDayOfInterval({ start, end });
 
-    const completionMap = new Map<string, number>();
+    const completionMap = new Map<string, { count: number; tasks: Set<string> }>();
     tasks.forEach((task) => {
       (task.task_completions ?? []).forEach((completion) => {
         const key = format(new Date(completion.completed_at), "yyyy-MM-dd");
-        completionMap.set(key, (completionMap.get(key) ?? 0) + 1);
+        const entry = completionMap.get(key) ?? { count: 0, tasks: new Set<string>() };
+        entry.count += 1;
+        entry.tasks.add(task.title);
+        completionMap.set(key, entry);
       });
     });
 
     const dayCells: DayCell[] = days.map((date) => {
       const key = format(date, "yyyy-MM-dd");
+      const entry = completionMap.get(key);
       return {
         date,
-        count: completionMap.get(key) ?? 0,
+        count: entry?.count ?? 0,
+        taskNames: entry ? Array.from(entry.tasks) : [],
       };
     });
 
@@ -93,9 +99,11 @@ export function FocusHeatmap({ tasks }: FocusHeatmapProps) {
               {week.map((cell) => (
                 <div
                   key={cell.date.toISOString()}
-                  title={`${format(cell.date, "MMM dd, yyyy")}: ${
-                    cell.count
-                  } completion${cell.count === 1 ? "" : "s"}`}
+                  title={
+                    cell.count > 0
+                      ? `${format(cell.date, "MMM dd, yyyy")}: ${cell.count} completion${cell.count === 1 ? "" : "s"} — ${cell.taskNames.join(", ")}`
+                      : format(cell.date, "MMM dd, yyyy")
+                  }
                   className={`h-3.5 w-3.5 rounded-sm border border-zinc-800 ${getIntensity(
                     cell.count
                   )}`}

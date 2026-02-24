@@ -1,6 +1,7 @@
 "use client";
 
 import { LogOut, User } from "lucide-react";
+import { supabase } from "@/lib/supabaseClient";
 import { AppShell } from "@/components/AppShell";
 import { useAuth } from "@/components/AuthProvider";
 import { NotificationPanel } from "@/components/NotificationPanel";
@@ -10,7 +11,16 @@ import { useTasks } from "@/hooks/useTasks";
 export default function SettingsPage() {
   const { user, loading } = useRequireAuth();
   const { signOut } = useAuth();
-  const { tasks, loading: loadingTasks, error } = useTasks();
+  const { tasks, loading: loadingTasks, error, setError, reload } = useTasks();
+
+  const handleComplete = async (taskId: string) => {
+    setError(null);
+    const { error: insertError } = await supabase
+      .from("task_completions")
+      .insert({ task_id: taskId, completed_at: new Date().toISOString() });
+    if (insertError) setError(insertError.message);
+    else await reload();
+  };
 
   if (loading) {
     return (
@@ -68,7 +78,7 @@ export default function SettingsPage() {
           {loadingTasks ? (
             <div className="text-sm text-zinc-400">Loading notifications...</div>
           ) : (
-            <NotificationPanel tasks={tasks} />
+            <NotificationPanel tasks={tasks} onComplete={handleComplete} />
           )}
         </section>
       </div>
