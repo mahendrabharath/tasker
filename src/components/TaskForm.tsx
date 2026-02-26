@@ -361,6 +361,7 @@ export function TaskForm({ onCreated, onCancel }: TaskFormProps) {
             </div>
           ))}
         </div>
+        {/* Task images - commented out until storage RLS is configured
         <label className="text-sm text-zinc-600 dark:text-zinc-300">
           Task images
           <input
@@ -378,6 +379,7 @@ export function TaskForm({ onCreated, onCancel }: TaskFormProps) {
             </p>
           )}
         </label>
+        */}
         {error && (
           <p className="rounded-xl border border-red-500/40 bg-red-500/10 p-3 text-xs text-red-700 dark:text-red-300">
             {error}

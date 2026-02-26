@@ -45,7 +45,8 @@ async function handleSend(request: Request) {
   webpush.setVapidDetails(vapidSubject, vapidPublicKey, vapidPrivateKey);
 
   const now = new Date();
-  const horizon = new Date(now.getTime() + 1000 * 60 * 5);
+  const windowMinutes = 30;
+  const horizon = new Date(now.getTime() + 1000 * 60 * windowMinutes);
   const minNotifiedAt = new Date(now.getTime() - 1000 * 60 * 5).toISOString();
 
   const { data: tasks, error: taskError } = await supabaseAdmin
@@ -70,7 +71,7 @@ async function handleSend(request: Request) {
       serverTime: now.toISOString(),
       serverTimeLocal: now.toString(),
       horizon: horizon.toISOString(),
-      window: "Tasks due between now and 5 minutes from now (skipping if notified in last 5 min)",
+      window: `Tasks due between now and ${windowMinutes} minutes from now (skipping if notified in last 5 min)`,
       tasksToSend: (tasks ?? []).map((t) => ({
         id: t.id,
         title: t.title,
@@ -110,9 +111,10 @@ async function handleSend(request: Request) {
     if (subs.length === 0) continue;
 
     const completeToken = createCompleteToken(task.id, task.user_id);
+    const taskTitle = task.title?.trim() || "Task";
     const payload = JSON.stringify({
-      title: task.title,
-      body: "Due soon",
+      title: taskTitle,
+      body: `${taskTitle} due soon`,
       url: "/app/dashboard",
       taskId: task.id,
       completeToken,

@@ -61,10 +61,13 @@ self.addEventListener("fetch", (event) => {
 self.addEventListener("push", (event) => {
   const data = event.data?.json() ?? {};
   const title = data.title || "Task reminder";
+  const body = data.body || "You have a task due soon.";
   const options = {
-    body: data.body || "You have a task due soon.",
+    body,
     icon: "/favicon.ico",
     badge: "/favicon.ico",
+    tag: data.taskId ? `tasker-${data.taskId}` : "tasker-reminder",
+    renotify: true,
     data: {
       url: data.url || "/app",
       taskId: data.taskId,

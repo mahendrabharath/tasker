@@ -182,7 +182,7 @@ The SQL is also saved in `supabase/scheduler.sql`.
 
 If test notifications work but task reminders don't:
 
-1. **Check the 5‑minute window** – Notifications are sent only for tasks due in the next 5 minutes. Create a task due in 2–3 minutes and wait for the next cron run.
+1. **Check the 30‑minute window** – Notifications are sent for tasks due in the next 30 minutes. Create a task due in 10–15 minutes and wait for the next cron run.
 
 2. **Use the debug endpoint** – Run `yarn push:urls` to print the debug URL from your `.env.local`. Or call:
    ```
