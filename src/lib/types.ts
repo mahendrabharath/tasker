@@ -1,3 +1,9 @@
+export type CompletionFieldDef = {
+  type: "number" | "text";
+  label: string;
+  tag: string;
+};
+
 export type Task = {
   id: string;
   user_id: string;
@@ -6,6 +12,7 @@ export type Task = {
   due_at: string | null;
   is_repeating: boolean;
   repeat_rule: string | null;
+  completion_fields?: CompletionFieldDef[] | null;
   created_at: string;
 };
 
@@ -20,6 +27,7 @@ export type TaskCompletion = {
   id: string;
   task_id: string;
   completed_at: string;
+  completion_values?: Record<string, number | string>;
 };
 
 export type TaskWithExtras = Task & {

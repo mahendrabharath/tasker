@@ -83,6 +83,10 @@ create table if not exists push_subscriptions (
   auth text not null,
   created_at timestamptz default now()
 );
+
+-- Completion fields: custom form when completing tasks, values shown in charts
+alter table tasks add column if not exists completion_fields jsonb default '[]';
+alter table task_completions add column if not exists completion_values jsonb default '{}';
 ```
 ```
 

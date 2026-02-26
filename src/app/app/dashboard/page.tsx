@@ -74,11 +74,18 @@ export default function DashboardPage() {
     }
   }, [showForm]);
 
-  const handleComplete = async (taskId: string) => {
+  const handleComplete = async (
+    taskId: string,
+    values?: Record<string, number | string>
+  ) => {
     setCompletingIds((prev) => new Set(prev).add(taskId));
     const { error: insertError } = await supabase
       .from("task_completions")
-      .insert({ task_id: taskId, completed_at: new Date().toISOString() });
+      .insert({
+        task_id: taskId,
+        completed_at: new Date().toISOString(),
+        completion_values: values ?? {},
+      });
 
     if (insertError) {
       setError(insertError.message);
@@ -87,7 +94,7 @@ export default function DashboardPage() {
         next.delete(taskId);
         return next;
       });
-      return;
+      throw new Error(insertError.message);
     }
 
     reload();

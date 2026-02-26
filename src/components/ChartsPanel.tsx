@@ -29,10 +29,20 @@ type ChartsPanelProps = {
   tasks: TaskWithExtras[];
 };
 
+type DataEntry = {
+  label: string;
+  count: number;
+  value?: number;
+  taskNames: string[];
+  taskDetails?: Array<{ task: string; values?: Record<string, number | string> }>;
+};
+
 const chartOptions = ["bar", "line", "area"] as const;
 type ChartType = (typeof chartOptions)[number];
 const scopeOptions = ["repeating", "all"] as const;
 type ScopeType = (typeof scopeOptions)[number];
+const metricOptions = ["completions", "value"] as const;
+type MetricType = (typeof metricOptions)[number];
 const rangeOptions = [
   { id: "12h", label: "12 hours" },
   { id: "24h", label: "24 hours" },
@@ -43,12 +53,30 @@ type RangeType = (typeof rangeOptions)[number]["id"];
 export function ChartsPanel({ tasks }: ChartsPanelProps) {
   const [chartType, setChartType] = useState<ChartType>("bar");
   const [scope, setScope] = useState<ScopeType>("all");
+  const [metric, setMetric] = useState<MetricType>("completions");
+  const [selectedTag, setSelectedTag] = useState<string>("");
   const [range, setRange] = useState<RangeType>("7d");
+
+  const availableTags = useMemo(() => {
+    const tags = new Set<string>();
+    tasks.forEach((task) => {
+      (task.completion_fields ?? []).forEach((f) => {
+        if (f?.tag?.trim()) tags.add(f.tag);
+      });
+      (task.task_completions ?? []).forEach((c) => {
+        const vals = c.completion_values as Record<string, number | string> | undefined;
+        if (vals) Object.keys(vals).forEach((k) => tags.add(k));
+      });
+    });
+    return Array.from(tags).sort();
+  }, [tasks]);
 
   const buildData = (
     sourceTasks: TaskWithExtras[],
-    rangeType: RangeType
-  ): { label: string; count: number; taskNames: string[] }[] => {
+    rangeType: RangeType,
+    metricType: MetricType,
+    tag: string
+  ): DataEntry[] => {
     const now = new Date();
 
     if (rangeType === "12h" || rangeType === "24h") {
@@ -58,11 +86,11 @@ export function ChartsPanel({ tasks }: ChartsPanelProps) {
 
       const base = new Map<
         string,
-        { count: number; tasks: Set<string> }
+        { count: number; value: number; tasks: Map<string, Record<string, number | string>> }
       >();
       hours.forEach((hour) => {
         const key = format(hour, "HH:mm");
-        base.set(key, { count: 0, tasks: new Set<string>() });
+        base.set(key, { count: 0, value: 0, tasks: new Map() });
       });
 
       sourceTasks.forEach((task) => {
@@ -71,17 +99,24 @@ export function ChartsPanel({ tasks }: ChartsPanelProps) {
           if (completedAt < start || completedAt > now) return;
           const hourKey = format(startOfHour(completedAt), "HH:mm");
           const entry = base.get(hourKey);
-          if (entry) {
-            entry.count += 1;
-            entry.tasks.add(task.title);
-          }
+          if (!entry) return;
+          entry.count += 1;
+          const vals = (completion.completion_values ?? {}) as Record<string, number | string>;
+          const tagVal = typeof vals[tag] === "number" ? vals[tag] : 0;
+          entry.value += tagVal as number;
+          entry.tasks.set(task.title, vals);
         });
       });
 
       return Array.from(base.entries()).map(([label, entry]) => ({
         label,
         count: entry.count,
-        taskNames: Array.from(entry.tasks),
+        value: entry.value,
+        taskNames: Array.from(entry.tasks.keys()),
+        taskDetails: Array.from(entry.tasks.entries()).map(([t, v]) => ({
+          task: t,
+          values: Object.keys(v).length ? v : undefined,
+        })),
       }));
     }
 
@@ -89,28 +124,35 @@ export function ChartsPanel({ tasks }: ChartsPanelProps) {
     const days = eachDayOfInterval({ start, end: now });
     const base = new Map<
       string,
-      { count: number; tasks: Set<string> }
+      { count: number; value: number; tasks: Map<string, Record<string, number | string>> }
     >();
     days.forEach((day) => {
       const key = format(day, "MMM dd");
-      base.set(key, { count: 0, tasks: new Set<string>() });
+      base.set(key, { count: 0, value: 0, tasks: new Map() });
     });
 
     sourceTasks.forEach((task) => {
       (task.task_completions ?? []).forEach((completion) => {
         const key = format(new Date(completion.completed_at), "MMM dd");
         const entry = base.get(key);
-        if (entry) {
-          entry.count += 1;
-          entry.tasks.add(task.title);
-        }
+        if (!entry) return;
+        entry.count += 1;
+        const vals = (completion.completion_values ?? {}) as Record<string, number | string>;
+        const tagVal = typeof vals[tag] === "number" ? vals[tag] : 0;
+        entry.value += tagVal as number;
+        entry.tasks.set(task.title, vals);
       });
     });
 
     return Array.from(base.entries()).map(([label, entry]) => ({
       label,
       count: entry.count,
-      taskNames: Array.from(entry.tasks),
+      value: entry.value,
+      taskNames: Array.from(entry.tasks.keys()),
+      taskDetails: Array.from(entry.tasks.entries()).map(([t, v]) => ({
+        task: t,
+        values: Object.keys(v).length ? v : undefined,
+      })),
     }));
   };
 
@@ -119,12 +161,16 @@ export function ChartsPanel({ tasks }: ChartsPanelProps) {
     return scope === "repeating" ? repeatingTasks : tasks;
   }, [tasks, scope]);
 
+  const effectiveTag = selectedTag || availableTags[0] || "";
   const data = useMemo(
-    () => buildData(sourceTasks, range),
-    [sourceTasks, range]
+    () => buildData(sourceTasks, range, metric, effectiveTag),
+    [sourceTasks, range, metric, effectiveTag]
   );
 
-  const hasData = data.some((entry) => entry.count > 0);
+  const dataKey = metric === "value" && effectiveTag ? "value" : "count";
+  const hasData = data.some(
+    (entry) => (metric === "value" ? (entry.value ?? 0) > 0 : entry.count > 0)
+  );
 
   const rangeLabel =
     range === "12h"
@@ -141,10 +187,45 @@ export function ChartsPanel({ tasks }: ChartsPanelProps) {
             Completion tracking
           </h2>
           <p className="text-xs text-zinc-500 dark:text-zinc-400">
-            Tasks completed over the {rangeLabel}. Hover for task names.
+            {metric === "value" && selectedTag
+              ? `${selectedTag} over the ${rangeLabel}`
+              : `Tasks completed over the ${rangeLabel}. Hover for details.`}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          <div className="flex rounded-full border border-zinc-200 bg-zinc-100 text-xs text-zinc-600 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300">
+            {metricOptions.map((option) => (
+              <button
+                key={option}
+                onClick={() => setMetric(option)}
+                className={`rounded-full px-4 py-2 transition ${
+                  metric === option
+                    ? "bg-zinc-900 text-white dark:bg-white dark:text-zinc-900"
+                    : "hover:bg-zinc-200 dark:hover:bg-zinc-800"
+                }`}
+              >
+                {option === "completions" ? "Count" : "Value"}
+              </button>
+            ))}
+          </div>
+          {metric === "value" && availableTags.length > 0 && (
+            <select
+              value={effectiveTag}
+              onChange={(e) => setSelectedTag(e.target.value)}
+              className="rounded-full border border-zinc-200 bg-zinc-100 px-4 py-2 text-xs text-zinc-600 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300"
+            >
+              {availableTags.map((tag) => (
+                <option key={tag} value={tag}>
+                  {tag}
+                </option>
+              ))}
+            </select>
+          )}
+          {metric === "value" && availableTags.length === 0 && (
+            <span className="text-xs text-zinc-500 dark:text-zinc-400">
+              Add completion fields to tasks to track values
+            </span>
+          )}
           <div className="flex rounded-full border border-zinc-200 bg-zinc-100 text-xs text-zinc-600 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300">
             {rangeOptions.map((option) => (
               <button
@@ -203,20 +284,20 @@ export function ChartsPanel({ tasks }: ChartsPanelProps) {
               <BarChart data={data}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
                 <XAxis dataKey="label" stroke="#a1a1aa" />
-                <YAxis stroke="#a1a1aa" allowDecimals={false} />
-                <Tooltip content={<ChartTooltip />} />
-                <Bar dataKey="count" fill="#e4e4e7" radius={[6, 6, 0, 0]} />
+                <YAxis stroke="#a1a1aa" allowDecimals={metric === "value"} />
+                <Tooltip content={<ChartTooltip metric={metric} />} />
+                <Bar dataKey={dataKey} fill="#e4e4e7" radius={[6, 6, 0, 0]} />
               </BarChart>
             )}
             {chartType === "line" && (
               <LineChart data={data}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
                 <XAxis dataKey="label" stroke="#a1a1aa" />
-                <YAxis stroke="#a1a1aa" allowDecimals={false} />
-                <Tooltip content={<ChartTooltip />} />
+                <YAxis stroke="#a1a1aa" allowDecimals={metric === "value"} />
+                <Tooltip content={<ChartTooltip metric={metric} />} />
                 <Line
                   type="monotone"
-                  dataKey="count"
+                  dataKey={dataKey}
                   stroke="#e4e4e7"
                   strokeWidth={2}
                 />
@@ -226,11 +307,11 @@ export function ChartsPanel({ tasks }: ChartsPanelProps) {
               <AreaChart data={data}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
                 <XAxis dataKey="label" stroke="#a1a1aa" />
-                <YAxis stroke="#a1a1aa" allowDecimals={false} />
-                <Tooltip content={<ChartTooltip />} />
+                <YAxis stroke="#a1a1aa" allowDecimals={metric === "value"} />
+                <Tooltip content={<ChartTooltip metric={metric} />} />
                 <Area
                   type="monotone"
-                  dataKey="count"
+                  dataKey={dataKey}
                   stroke="#e4e4e7"
                   fill="#3f3f46"
                 />
@@ -246,31 +327,43 @@ export function ChartsPanel({ tasks }: ChartsPanelProps) {
 function ChartTooltip({
   active,
   payload,
+  metric,
 }: {
   active?: boolean;
-  payload?: Array<{
-    payload?: { label?: string; count?: number; taskNames?: string[] };
-  }>;
+  payload?: Array<{ payload?: DataEntry }>;
+  metric?: MetricType;
 }) {
   if (!active || !payload?.length) return null;
   const info = payload[0]?.payload;
   if (!info) return null;
   const names = info.taskNames ?? [];
+  const details = info.taskDetails ?? [];
+  const showValue = metric === "value";
 
   return (
     <div className="rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-xs text-zinc-200 shadow-lg min-w-[160px]">
       <p className="font-semibold text-zinc-100">{info.label}</p>
       <p className="mt-0.5 text-zinc-300">
-        {info.count ?? 0} completion{info.count !== 1 ? "s" : ""}
+        {showValue
+          ? `${info.value ?? 0} total`
+          : `${info.count ?? 0} completion${(info.count ?? 0) !== 1 ? "s" : ""}`}
       </p>
-      {names.length > 0 && (
+      {details.length > 0 && (
         <div className="mt-2 border-t border-zinc-800 pt-2">
           <p className="text-[10px] uppercase tracking-wider text-zinc-500">
-            Tasks completed
+            Tasks
           </p>
           <ul className="mt-1 space-y-0.5 text-zinc-300">
-            {names.map((name) => (
-              <li key={name}>• {name}</li>
+            {details.map((d) => (
+              <li key={d.task}>
+                • {d.task}
+                {d.values &&
+                  Object.entries(d.values).map(([k, v]) => (
+                    <span key={k} className="ml-1 text-zinc-400">
+                      ({k}: {String(v)})
+                    </span>
+                  ))}
+              </li>
             ))}
           </ul>
         </div>

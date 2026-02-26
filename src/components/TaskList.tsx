@@ -1,15 +1,27 @@
 "use client";
 
-import { useMemo } from "react";
-import { format } from "date-fns";
+import { useMemo, useState } from "react";
+import {
+  format,
+  getHours,
+  getMinutes,
+  isSameDay,
+  setHours,
+  setMinutes,
+  startOfDay,
+} from "date-fns";
 import { supabase } from "@/lib/supabaseClient";
 import type { TaskWithExtras } from "@/lib/types";
 import { TaskListSkeleton } from "./TaskListSkeleton";
+import { CompletionFormModal } from "./CompletionFormModal";
 
 type TaskListProps = {
   tasks: TaskWithExtras[];
   loading: boolean;
-  onComplete: (taskId: string) => void;
+  onComplete: (
+    taskId: string,
+    values?: Record<string, number | string>
+  ) => void | Promise<void>;
   onDelete: (taskId: string, imagePaths: string[]) => void;
   onDeleteSelected?: (taskIds: string[], imagePathsByTask: Map<string, string[]>) => void;
   completingIds: Set<string>;
@@ -31,6 +43,9 @@ export function TaskList({
   onSelect,
   onCancelDelete,
 }: TaskListProps) {
+  const [completionModalTask, setCompletionModalTask] =
+    useState<TaskWithExtras | null>(null);
+
   const imageMap = useMemo(() => {
     const map = new Map<string, string[]>();
     tasks.forEach((task) => {
@@ -72,8 +87,35 @@ export function TaskList({
     onDeleteSelected(Array.from(selectedIds), imagePathsByTask);
   };
 
+  const handleCompleteClick = (task: TaskWithExtras) => {
+    const fields = (task.completion_fields ?? []).filter(
+      (f) => f?.label?.trim() && f?.tag?.trim()
+    );
+    if (fields.length > 0) {
+      setCompletionModalTask(task);
+    } else {
+      onComplete(task.id);
+    }
+  };
+
+  const handleCompletionSubmit = async (
+    values: Record<string, number | string>
+  ) => {
+    if (!completionModalTask) return;
+    const result = onComplete(completionModalTask.id, values);
+    if (result instanceof Promise) await result;
+    setCompletionModalTask(null);
+  };
+
   return (
     <div className="flex flex-col gap-4" role="list" aria-label="Task list">
+      {completionModalTask && (
+        <CompletionFormModal
+          task={completionModalTask}
+          onClose={() => setCompletionModalTask(null)}
+          onSubmit={handleCompletionSubmit}
+        />
+      )}
       {deleteMode && (
         <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-zinc-200 bg-zinc-100/80 px-4 py-3 dark:border-zinc-800 dark:bg-zinc-900/70">
           <span className="text-sm text-zinc-600 dark:text-zinc-300">
@@ -103,16 +145,58 @@ export function TaskList({
       {tasks.map((task) => {
         const completionCount = task.task_completions?.length ?? 0;
         const lastCompletion = task.task_completions?.[0]?.completed_at;
-        const isCompleted = !task.is_repeating && completionCount > 0;
-        const dueDate = task.due_at ? new Date(task.due_at) : null;
-        const isOverdue =
-          dueDate && dueDate.getTime() < Date.now() && !isCompleted;
-        const isDueSoon =
-          dueDate &&
-          !isCompleted &&
-          !isOverdue &&
-          dueDate.getTime() > Date.now() &&
-          dueDate.getTime() - Date.now() <= 1000 * 60 * 60 * 6;
+        const now = new Date();
+        const today = startOfDay(now);
+
+        let isCompleted: boolean;
+        let dueDate: Date | null;
+        let isOverdue: boolean;
+        let isDueSoon: boolean;
+        let dueLabel: string;
+
+        if (task.is_repeating && task.due_at) {
+          const originalDue = new Date(task.due_at);
+          const todayDue = setMinutes(
+            setHours(today, getHours(originalDue)),
+            getMinutes(originalDue)
+          );
+          const completedToday =
+            (task.task_completions ?? []).some((c) =>
+              isSameDay(new Date(c.completed_at), now)
+            );
+          isCompleted = completedToday;
+          dueDate = todayDue;
+          dueLabel = `Today at ${format(todayDue, "h:mm a")}`;
+          if (completedToday) {
+            isOverdue = false;
+            isDueSoon = false;
+          } else if (now.getTime() < todayDue.getTime()) {
+            isOverdue = false;
+            isDueSoon =
+              todayDue.getTime() - now.getTime() <= 1000 * 60 * 60 * 6;
+          } else {
+            isOverdue = false;
+            isDueSoon = false;
+          }
+        } else if (!task.is_repeating) {
+          isCompleted = completionCount > 0;
+          dueDate = task.due_at ? new Date(task.due_at) : null;
+          isOverdue =
+            !!dueDate && dueDate.getTime() < now.getTime() && !isCompleted;
+          isDueSoon =
+            !!dueDate &&
+            !isCompleted &&
+            !isOverdue &&
+            dueDate.getTime() > now.getTime() &&
+            dueDate.getTime() - now.getTime() <= 1000 * 60 * 60 * 6;
+          dueLabel = dueDate ? format(dueDate, "MMM dd, yyyy p") : "";
+        } else {
+          isCompleted = false;
+          dueDate = null;
+          isOverdue = false;
+          isDueSoon = false;
+          dueLabel = "";
+        }
         const images = imageMap.get(task.id) ?? [];
         const imagePaths =
           task.task_images?.map((image) => image.storage_path) ?? [];
@@ -169,7 +253,7 @@ export function TaskList({
                     {task.due_at && (
                       <span>
                         Due{" "}
-                        {format(new Date(task.due_at), "MMM dd, yyyy p")}
+                        {task.is_repeating ? dueLabel : format(new Date(task.due_at), "MMM dd, yyyy p")}
                       </span>
                     )}
                     {!task.due_at && <span>No due date</span>}
@@ -208,7 +292,9 @@ export function TaskList({
                     )}
                     {!isCompleted && !isOverdue && !isDueSoon && dueDate && (
                       <span className="rounded-full border border-zinc-300 bg-zinc-200/60 px-3 py-1 text-zinc-700 dark:border-zinc-700/60 dark:bg-zinc-800/40 dark:text-zinc-300">
-                        Upcoming
+                        {task.is_repeating && now.getTime() >= dueDate.getTime()
+                          ? "Incomplete"
+                          : "Upcoming"}
                       </span>
                     )}
                   </div>
@@ -225,7 +311,7 @@ export function TaskList({
                   {!isCompleted && (
                     <button
                       type="button"
-                      onClick={() => onComplete(task.id)}
+                      onClick={() => handleCompleteClick(task)}
                       disabled={isCompleting}
                       aria-label={
                         task.is_repeating

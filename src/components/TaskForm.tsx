@@ -3,8 +3,10 @@
 import { useState } from "react";
 import DatePicker from "react-datepicker";
 import { isSameDay, set as setDateParts, startOfDay } from "date-fns";
+import { Plus, Trash2 } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 import { useAuth } from "@/components/AuthProvider";
+import type { CompletionFieldDef } from "@/lib/types";
 
 type TaskFormProps = {
   onCreated: () => void;
@@ -64,8 +66,27 @@ export function TaskForm({ onCreated, onCancel }: TaskFormProps) {
   const [isRepeating, setIsRepeating] = useState(false);
   const [repeatRule, setRepeatRule] = useState("daily");
   const [images, setImages] = useState<File[]>([]);
+  const [completionFields, setCompletionFields] = useState<CompletionFieldDef[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const addCompletionField = () => {
+    setCompletionFields((prev) => [
+      ...prev,
+      { type: "number", label: "", tag: "" },
+    ]);
+  };
+  const removeCompletionField = (index: number) => {
+    setCompletionFields((prev) => prev.filter((_, i) => i !== index));
+  };
+  const updateCompletionField = (
+    index: number,
+    updates: Partial<CompletionFieldDef>
+  ) => {
+    setCompletionFields((prev) =>
+      prev.map((f, i) => (i === index ? { ...f, ...updates } : f))
+    );
+  };
 
   const resetForm = () => {
     setTitle("");
@@ -74,6 +95,7 @@ export function TaskForm({ onCreated, onCancel }: TaskFormProps) {
     setIsRepeating(false);
     setRepeatRule("daily");
     setImages([]);
+    setCompletionFields([]);
   };
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -88,6 +110,9 @@ export function TaskForm({ onCreated, onCancel }: TaskFormProps) {
       return;
     }
 
+    const validFields = completionFields.filter(
+      (f) => f.label.trim() && f.tag.trim()
+    );
     const { data: task, error: insertError } = await supabase
       .from("tasks")
       .insert({
@@ -97,6 +122,7 @@ export function TaskForm({ onCreated, onCancel }: TaskFormProps) {
         due_at: dueAt ? dueAt.toISOString() : null,
         is_repeating: isRepeating,
         repeat_rule: isRepeating ? repeatRule : null,
+        completion_fields: validFields.length > 0 ? validFields : null,
       })
       .select()
       .single();
@@ -260,6 +286,81 @@ export function TaskForm({ onCreated, onCancel }: TaskFormProps) {
             </select>
           </label>
         )}
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-medium text-zinc-600 dark:text-zinc-300">
+              Completion fields
+            </h3>
+            <button
+              type="button"
+              onClick={addCompletionField}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-zinc-300 px-3 py-1.5 text-xs font-medium text-zinc-700 transition hover:border-zinc-400 dark:border-zinc-700 dark:text-zinc-300 dark:hover:border-zinc-600"
+            >
+              <Plus className="h-3.5 w-3.5" aria-hidden="true" />
+              Add field
+            </button>
+          </div>
+          <p className="text-xs text-zinc-500 dark:text-zinc-400">
+            When completing this task, show a form to capture values (e.g.
+            pellets given). Tag is used in charts.
+          </p>
+          {completionFields.map((field, index) => (
+            <div
+              key={index}
+              className="flex flex-wrap items-end gap-3 rounded-xl border border-zinc-200 bg-white p-3 dark:border-zinc-800 dark:bg-zinc-950"
+            >
+              <label className="min-w-[120px] flex-1 text-xs text-zinc-600 dark:text-zinc-400">
+                Label
+                <input
+                  type="text"
+                  value={field.label}
+                  onChange={(e) =>
+                    updateCompletionField(index, { label: e.target.value })
+                  }
+                  placeholder="e.g. How many pellets?"
+                  className="mt-1 w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+                />
+              </label>
+              <label className="min-w-[100px] flex-1 text-xs text-zinc-600 dark:text-zinc-400">
+                Tag (chart)
+                <input
+                  type="text"
+                  value={field.tag}
+                  onChange={(e) =>
+                    updateCompletionField(index, {
+                      tag: e.target.value.toLowerCase().replace(/\s/g, "_"),
+                    })
+                  }
+                  placeholder="e.g. pellets"
+                  className="mt-1 w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+                />
+              </label>
+              <label className="text-xs text-zinc-600 dark:text-zinc-400">
+                Type
+                <select
+                  value={field.type}
+                  onChange={(e) =>
+                    updateCompletionField(index, {
+                      type: e.target.value as "number" | "text",
+                    })
+                  }
+                  className="ml-2 mt-1 rounded-lg border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+                >
+                  <option value="number">Number</option>
+                  <option value="text">Text</option>
+                </select>
+              </label>
+              <button
+                type="button"
+                onClick={() => removeCompletionField(index)}
+                aria-label="Remove field"
+                className="rounded-lg p-2 text-zinc-500 transition hover:bg-red-500/10 hover:text-red-600 dark:hover:text-red-400"
+              >
+                <Trash2 className="h-4 w-4" aria-hidden="true" />
+              </button>
+            </div>
+          ))}
+        </div>
         <label className="text-sm text-zinc-600 dark:text-zinc-300">
           Task images
           <input
