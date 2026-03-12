@@ -17,29 +17,31 @@ export function CompletionFormModal({
   const fields = (task.completion_fields ?? []).filter(
     (f) => f.label?.trim() && f.tag?.trim()
   );
-  const [values, setValues] = useState<Record<string, number | string>>(() => {
-    const init: Record<string, number | string> = {};
+  const [values, setValues] = useState<Record<string, string>>(() => {
+    const init: Record<string, string> = {};
     fields.forEach((f) => {
-      init[f.tag] = f.type === "number" ? 0 : "";
+      init[f.tag] = "";
     });
     return init;
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const handleChange = (tag: string, type: "number" | "text", val: string) => {
-    setValues((prev) => ({
-      ...prev,
-      [tag]: type === "number" ? (parseFloat(val) || 0) : val,
-    }));
+  const handleChange = (tag: string, val: string) => {
+    setValues((prev) => ({ ...prev, [tag]: val }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
+    const parsed: Record<string, number | string> = {};
+    fields.forEach((f) => {
+      const raw = values[f.tag] ?? "";
+      parsed[f.tag] = f.type === "number" ? (parseFloat(raw) || 0) : raw;
+    });
     try {
-      await onSubmit(values);
+      await onSubmit(parsed);
       onClose();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to save");
@@ -76,19 +78,15 @@ export function CompletionFormModal({
                   type="number"
                   min={0}
                   step="any"
-                  value={values[field.tag] ?? 0}
-                  onChange={(e) =>
-                    handleChange(field.tag, "number", e.target.value)
-                  }
+                  value={values[field.tag] ?? ""}
+                  onChange={(e) => handleChange(field.tag, e.target.value)}
                   className="mt-2 w-full rounded-xl border border-zinc-300 bg-white px-4 py-3 text-sm text-zinc-900 focus:border-zinc-500 focus:outline-none dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100"
                 />
               ) : (
                 <input
                   type="text"
-                  value={String(values[field.tag] ?? "")}
-                  onChange={(e) =>
-                    handleChange(field.tag, "text", e.target.value)
-                  }
+                  value={values[field.tag] ?? ""}
+                  onChange={(e) => handleChange(field.tag, e.target.value)}
                   className="mt-2 w-full rounded-xl border border-zinc-300 bg-white px-4 py-3 text-sm text-zinc-900 focus:border-zinc-500 focus:outline-none dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100"
                 />
               )}

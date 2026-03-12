@@ -47,6 +47,7 @@ const rangeOptions = [
   { id: "12h", label: "12 hours" },
   { id: "24h", label: "24 hours" },
   { id: "7d", label: "Weekly" },
+  { id: "30d", label: "Monthly" },
 ] as const;
 type RangeType = (typeof rangeOptions)[number]["id"];
 
@@ -120,20 +121,24 @@ export function ChartsPanel({ tasks }: ChartsPanelProps) {
       }));
     }
 
-    const start = subDays(now, 6);
+    const daysBack = rangeType === "30d" ? 29 : 6;
+    const start = subDays(now, daysBack);
     const days = eachDayOfInterval({ start, end: now });
+    const dayFormat = rangeType === "30d" ? "MMM d" : "MMM dd";
     const base = new Map<
       string,
       { count: number; value: number; tasks: Map<string, Record<string, number | string>> }
     >();
     days.forEach((day) => {
-      const key = format(day, "MMM dd");
+      const key = format(day, dayFormat);
       base.set(key, { count: 0, value: 0, tasks: new Map() });
     });
 
     sourceTasks.forEach((task) => {
       (task.task_completions ?? []).forEach((completion) => {
-        const key = format(new Date(completion.completed_at), "MMM dd");
+        const completedAt = new Date(completion.completed_at);
+        if (completedAt < start || completedAt > now) return;
+        const key = format(completedAt, dayFormat);
         const entry = base.get(key);
         if (!entry) return;
         entry.count += 1;
@@ -177,6 +182,8 @@ export function ChartsPanel({ tasks }: ChartsPanelProps) {
       ? "last 12 hours"
       : range === "24h"
       ? "last 24 hours"
+      : range === "30d"
+      ? "last 30 days"
       : "last 7 days";
 
   return (
@@ -283,7 +290,11 @@ export function ChartsPanel({ tasks }: ChartsPanelProps) {
             {chartType === "bar" && (
               <BarChart data={data}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
-                <XAxis dataKey="label" stroke="#a1a1aa" />
+                <XAxis
+                  dataKey="label"
+                  stroke="#a1a1aa"
+                  interval={range === "30d" ? 4 : 0}
+                />
                 <YAxis stroke="#a1a1aa" allowDecimals={metric === "value"} />
                 <Tooltip content={<ChartTooltip metric={metric} />} />
                 <Bar dataKey={dataKey} fill="#e4e4e7" radius={[6, 6, 0, 0]} />
@@ -292,7 +303,11 @@ export function ChartsPanel({ tasks }: ChartsPanelProps) {
             {chartType === "line" && (
               <LineChart data={data}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
-                <XAxis dataKey="label" stroke="#a1a1aa" />
+                <XAxis
+                  dataKey="label"
+                  stroke="#a1a1aa"
+                  interval={range === "30d" ? 4 : 0}
+                />
                 <YAxis stroke="#a1a1aa" allowDecimals={metric === "value"} />
                 <Tooltip content={<ChartTooltip metric={metric} />} />
                 <Line
@@ -306,7 +321,11 @@ export function ChartsPanel({ tasks }: ChartsPanelProps) {
             {chartType === "area" && (
               <AreaChart data={data}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
-                <XAxis dataKey="label" stroke="#a1a1aa" />
+                <XAxis
+                  dataKey="label"
+                  stroke="#a1a1aa"
+                  interval={range === "30d" ? 4 : 0}
+                />
                 <YAxis stroke="#a1a1aa" allowDecimals={metric === "value"} />
                 <Tooltip content={<ChartTooltip metric={metric} />} />
                 <Area
