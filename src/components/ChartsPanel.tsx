@@ -186,129 +186,141 @@ export function ChartsPanel({ tasks }: ChartsPanelProps) {
       ? "last 30 days"
       : "last 7 days";
 
+  const xAxisInterval = range === "30d" ? 4 : range === "7d" ? 1 : 0;
+  const xAxisTick = { fontSize: 11 };
+
   return (
-    <section className="rounded-3xl border border-zinc-200 bg-zinc-100/80 p-6 dark:border-zinc-800 dark:bg-zinc-900/70">
-      <div className="flex flex-wrap items-center justify-between gap-4">
+    <section className="rounded-3xl border border-zinc-200 bg-zinc-100/80 p-4 sm:p-6 dark:border-zinc-800 dark:bg-zinc-900/70">
+      <div className="flex flex-col gap-4">
         <div>
           <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">
             Completion tracking
           </h2>
-          <p className="text-xs text-zinc-500 dark:text-zinc-400">
+          <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">
             {metric === "value" && selectedTag
               ? `${selectedTag} over the ${rangeLabel}`
-              : `Tasks completed over the ${rangeLabel}. Hover for details.`}
+              : `Tasks completed over the ${rangeLabel}. Tap for details.`}
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="flex rounded-full border border-zinc-200 bg-zinc-100 text-xs text-zinc-600 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300">
-            {metricOptions.map((option) => (
-              <button
-                key={option}
-                onClick={() => setMetric(option)}
-                className={`rounded-full px-4 py-2 transition ${
-                  metric === option
-                    ? "bg-zinc-900 text-white dark:bg-white dark:text-zinc-900"
-                    : "hover:bg-zinc-200 dark:hover:bg-zinc-800"
-                }`}
-              >
-                {option === "completions" ? "Count" : "Value"}
-              </button>
-            ))}
-          </div>
-          {metric === "value" && availableTags.length > 0 && (
-            <select
-              value={effectiveTag}
-              onChange={(e) => setSelectedTag(e.target.value)}
-              className="rounded-full border border-zinc-200 bg-zinc-100 px-4 py-2 text-xs text-zinc-600 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300"
-            >
-              {availableTags.map((tag) => (
-                <option key={tag} value={tag}>
-                  {tag}
-                </option>
+        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:gap-2">
+          <div className="flex flex-wrap gap-2">
+            <div className="inline-flex rounded-lg border border-zinc-200 bg-zinc-100 text-xs dark:border-zinc-800 dark:bg-zinc-950">
+              {metricOptions.map((option) => (
+                <button
+                  key={option}
+                  onClick={() => setMetric(option)}
+                  className={`min-w-[4rem] rounded-md px-3 py-2 transition ${
+                    metric === option
+                      ? "bg-zinc-900 text-white dark:bg-white dark:text-zinc-900"
+                      : "text-zinc-600 hover:bg-zinc-200 dark:text-zinc-300 dark:hover:bg-zinc-800"
+                  }`}
+                >
+                  {option === "completions" ? "Count" : "Value"}
+                </button>
               ))}
-            </select>
-          )}
-          {metric === "value" && availableTags.length === 0 && (
-            <span className="text-xs text-zinc-500 dark:text-zinc-400">
-              Add completion fields to tasks to track values
-            </span>
-          )}
-          <div className="flex rounded-full border border-zinc-200 bg-zinc-100 text-xs text-zinc-600 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300">
-            {rangeOptions.map((option) => (
-              <button
-                key={option.id}
-                onClick={() => setRange(option.id)}
-                className={`rounded-full px-4 py-2 transition ${
-                  range === option.id
-                    ? "bg-zinc-900 text-white dark:bg-white dark:text-zinc-900"
-                    : "hover:bg-zinc-200 dark:hover:bg-zinc-800"
-                }`}
+            </div>
+            {metric === "value" && availableTags.length > 0 && (
+              <select
+                value={effectiveTag}
+                onChange={(e) => setSelectedTag(e.target.value)}
+                className="min-w-0 rounded-lg border border-zinc-200 bg-zinc-100 px-3 py-2 text-xs text-zinc-600 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300"
               >
-                {option.label}
-              </button>
-            ))}
+                {availableTags.map((tag) => (
+                  <option key={tag} value={tag}>
+                    {tag}
+                  </option>
+                ))}
+              </select>
+            )}
+            {metric === "value" && availableTags.length === 0 && (
+              <span className="self-center text-xs text-zinc-500 dark:text-zinc-400">
+                Add completion fields to tasks
+              </span>
+            )}
           </div>
-          <div className="flex rounded-full border border-zinc-200 bg-zinc-100 text-xs text-zinc-600 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300">
-            {scopeOptions.map((option) => (
-              <button
-                key={option}
-                onClick={() => setScope(option)}
-                className={`rounded-full px-4 py-2 transition ${
-                  scope === option
-                    ? "bg-zinc-900 text-white dark:bg-white dark:text-zinc-900"
-                    : "hover:bg-zinc-200 dark:hover:bg-zinc-800"
-                }`}
-              >
-                {option === "repeating" ? "Repeating" : "All"}
-              </button>
-            ))}
-          </div>
-          <div className="flex rounded-full border border-zinc-200 bg-zinc-100 text-xs text-zinc-600 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300">
-            {chartOptions.map((option) => (
-              <button
-                key={option}
-                onClick={() => setChartType(option)}
-                className={`rounded-full px-4 py-2 transition ${
-                  chartType === option
-                    ? "bg-zinc-900 text-white dark:bg-white dark:text-zinc-900"
-                    : "hover:bg-zinc-200 dark:hover:bg-zinc-800"
-                }`}
-              >
-                {option.toUpperCase()}
-              </button>
-            ))}
+          <div className="flex flex-wrap gap-2">
+            <div className="inline-flex rounded-lg border border-zinc-200 bg-zinc-100 text-xs dark:border-zinc-800 dark:bg-zinc-950">
+              {rangeOptions.map((option) => (
+                <button
+                  key={option.id}
+                  onClick={() => setRange(option.id)}
+                  className={`min-w-[4rem] rounded-md px-3 py-2 transition ${
+                    range === option.id
+                      ? "bg-zinc-900 text-white dark:bg-white dark:text-zinc-900"
+                      : "text-zinc-600 hover:bg-zinc-200 dark:text-zinc-300 dark:hover:bg-zinc-800"
+                  }`}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+            <div className="inline-flex rounded-lg border border-zinc-200 bg-zinc-100 text-xs dark:border-zinc-800 dark:bg-zinc-950">
+              {scopeOptions.map((option) => (
+                <button
+                  key={option}
+                  onClick={() => setScope(option)}
+                  className={`min-w-[4rem] rounded-md px-3 py-2 transition ${
+                    scope === option
+                      ? "bg-zinc-900 text-white dark:bg-white dark:text-zinc-900"
+                      : "text-zinc-600 hover:bg-zinc-200 dark:text-zinc-300 dark:hover:bg-zinc-800"
+                  }`}
+                >
+                  {option === "repeating" ? "Repeating" : "All"}
+                </button>
+              ))}
+            </div>
+            <div className="inline-flex rounded-lg border border-zinc-200 bg-zinc-100 text-xs dark:border-zinc-800 dark:bg-zinc-950">
+              {chartOptions.map((option) => (
+                <button
+                  key={option}
+                  onClick={() => setChartType(option)}
+                  className={`min-w-[3.5rem] rounded-md px-3 py-2 transition ${
+                    chartType === option
+                      ? "bg-zinc-900 text-white dark:bg-white dark:text-zinc-900"
+                      : "text-zinc-600 hover:bg-zinc-200 dark:text-zinc-300 dark:hover:bg-zinc-800"
+                  }`}
+                >
+                  {option.toUpperCase()}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       </div>
-      <div className="mt-6 h-64">
+      <div className="relative mt-4 h-64 min-w-0 overflow-hidden sm:mt-6">
         {!hasData ? (
           <div className="flex h-full items-center justify-center rounded-2xl border border-dashed border-zinc-300 text-sm text-zinc-500 dark:border-zinc-800 dark:text-zinc-400">
             No completion data yet. Log completions to see trends.
           </div>
         ) : (
-          <ResponsiveContainer width="100%" height="100%">
+          <div className="h-full min-w-0 overflow-hidden">
+            <ResponsiveContainer width="100%" height="100%">
             {chartType === "bar" && (
-              <BarChart data={data}>
+              <BarChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 4 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
                 <XAxis
                   dataKey="label"
                   stroke="#a1a1aa"
-                  interval={range === "30d" ? 4 : 0}
+                  interval={xAxisInterval}
+                  tick={xAxisTick}
+                  tickLine={false}
                 />
-                <YAxis stroke="#a1a1aa" allowDecimals={metric === "value"} />
+                <YAxis stroke="#a1a1aa" allowDecimals={metric === "value"} width={28} tick={{ fontSize: 11 }} tickLine={false} />
                 <Tooltip content={<ChartTooltip metric={metric} />} />
                 <Bar dataKey={dataKey} fill="#e4e4e7" radius={[6, 6, 0, 0]} />
               </BarChart>
             )}
             {chartType === "line" && (
-              <LineChart data={data}>
+              <LineChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 4 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
                 <XAxis
                   dataKey="label"
                   stroke="#a1a1aa"
-                  interval={range === "30d" ? 4 : 0}
+                  interval={xAxisInterval}
+                  tick={xAxisTick}
+                  tickLine={false}
                 />
-                <YAxis stroke="#a1a1aa" allowDecimals={metric === "value"} />
+                <YAxis stroke="#a1a1aa" allowDecimals={metric === "value"} width={28} tick={{ fontSize: 11 }} tickLine={false} />
                 <Tooltip content={<ChartTooltip metric={metric} />} />
                 <Line
                   type="monotone"
@@ -319,14 +331,16 @@ export function ChartsPanel({ tasks }: ChartsPanelProps) {
               </LineChart>
             )}
             {chartType === "area" && (
-              <AreaChart data={data}>
+              <AreaChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 4 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
                 <XAxis
                   dataKey="label"
                   stroke="#a1a1aa"
-                  interval={range === "30d" ? 4 : 0}
+                  interval={xAxisInterval}
+                  tick={xAxisTick}
+                  tickLine={false}
                 />
-                <YAxis stroke="#a1a1aa" allowDecimals={metric === "value"} />
+                <YAxis stroke="#a1a1aa" allowDecimals={metric === "value"} width={28} tick={{ fontSize: 11 }} tickLine={false} />
                 <Tooltip content={<ChartTooltip metric={metric} />} />
                 <Area
                   type="monotone"
@@ -337,6 +351,7 @@ export function ChartsPanel({ tasks }: ChartsPanelProps) {
               </AreaChart>
             )}
           </ResponsiveContainer>
+          </div>
         )}
       </div>
     </section>

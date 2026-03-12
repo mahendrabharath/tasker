@@ -69,7 +69,7 @@ export function FocusHeatmap({ tasks }: FocusHeatmapProps) {
   };
 
   return (
-    <section className="rounded-3xl border border-zinc-200 bg-zinc-100/80 p-6 dark:border-zinc-800 dark:bg-zinc-900/70">
+    <section className="min-w-0 rounded-3xl border border-zinc-200 bg-zinc-100/80 p-4 sm:p-6 dark:border-zinc-800 dark:bg-zinc-900/70">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">Focus Heatmap</h2>
